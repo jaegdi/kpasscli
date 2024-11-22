@@ -1,0 +1,2 @@
+database_path: "/path/to/default/database.kdbx"
+default_output: "stdout"
