@@ -4,9 +4,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"kpasscli/config"
+	"kpasscli/debug"
 	"kpasscli/doc"
 	"kpasscli/keepass"
 	"kpasscli/output"
@@ -14,6 +16,9 @@ import (
 )
 
 func main() {
+	// Initialize logging
+	log.SetFlags(log.LstdFlags) // Entferne log.Lshortfile, um Dateinamen und Zeilennummern zu unterdrücken
+
 	var (
 		kdbPath       = flag.String("kdbpath", "", "Path to KeePass database file")
 		kdbPass       = flag.String("kdbpass", "", "Password file or executable to get password")
@@ -24,10 +29,15 @@ func main() {
 		exactMatch    = flag.Bool("exact-match", false, "Enable exact match search")
 		showMan       = flag.Bool("man", false, "Show manual page")
 		showHelp      = flag.Bool("help", false, "Show help message")
+		debugFlag     = flag.Bool("debug", false, "Enable debug logging")
 	)
 
 	flag.Usage = doc.ShowHelp
 	flag.Parse()
+
+	if *debugFlag {
+		debug.Enable()
+	}
 
 	if *showMan {
 		doc.ShowMan()
@@ -38,6 +48,8 @@ func main() {
 		doc.ShowHelp()
 		return
 	}
+
+	debug.Log("Starting kpasscli with item: %s", *item) // Debug-Log hinzugefügt
 
 	if *item == "" {
 		fmt.Println("Error: Item parameter is required")
@@ -51,13 +63,14 @@ func main() {
 
 	// Resolve database path
 	dbPath := resolveDatabasePath(*kdbPath, cfg)
+	debug.Log("Resolved database path: %s", dbPath) // Debug-Log hinzugefügt
 	if dbPath == "" {
 		fmt.Println("Error: No KeePass database path provided")
 		os.Exit(1)
 	}
 
 	// Get database password
-	password, err := keepass.ResolvePassword(*kdbPass)
+	password, err := keepass.ResolvePassword(*kdbPass, cfg)
 	if err != nil {
 		fmt.Printf("Error getting password: %v\n", err)
 		os.Exit(1)
