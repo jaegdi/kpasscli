@@ -1,2 +1,4 @@
-database_path: "/path/to/default/database.kdbx"
+database_path: /gast-drive-d/MyDatabase.kdbx
 default_output: "stdout"
+password_file: ""
+password_executable: get-keepass-mydb-master-password.sh
