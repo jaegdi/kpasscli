@@ -15,6 +15,10 @@ func Enable() {
 }
 
 // Log logs a debug message if debug logging is enabled.
+// It includes the name of the calling function and the line number in the log message.
+// Parameters:
+//   - format: The format string for the log message, similar to fmt.Printf.
+//   - v: The values to be formatted according to the format string.
 func Log(format string, v ...interface{}) {
 	if enabled {
 		pc, file, line, ok := runtime.Caller(1)

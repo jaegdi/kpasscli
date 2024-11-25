@@ -14,6 +14,15 @@ DESCRIPTION
     kpasscli is a command-line tool for querying KeePass database files.
     It allows retrieving entries and their fields using various search methods.
 
+    If no -kdbpass is given, then kpasscli asks for the password interactively by a passwored prompt.
+
+    If the item is found, it takes per default the value of the password field or if
+    the parameter -fieldname is given, the value of this field.
+
+    Then it depends of the output config, if this is set to
+    - stdout: The value is printed to stdout
+    - clipboard: The value is copied into the clipboard and can be pasted wherever it is needed
+
 OPTIONS
     -kdbpath path
         Path to the KeePass database file. If not specified, the tool will look for
@@ -59,12 +68,18 @@ SEARCH BEHAVIOR
 
 CONFIGURATION
     Configuration can be provided via a config.yaml file with the following fields:
-    - database_path: Default path to the KeePass database
-    - default_output: Default output type (stdout/clipboard)
+    - database_path:       Default path to the KeePass database
+    - default_output:      Default output type (stdout/clipboard)
+    # Password retrieval methods, take care, this can be unsecure if you not protect the password file
+    # or the executable properly
+    - password_file:       file which contains the password to open the keepass db
+    - password_executable: the path to the executable, that returns the password to open the keepass database.
+                           This method can be safe, if the executable itself asks for a general password to run it.
 
 ENVIRONMENT
-    KDBPATH
-        Alternative way to specify the KeePass database path
+    KPASSCLI_KDBPATH       Alternative way to specify the KeePass database path
+    KPASSCLI_OUT           Alternative way to specify the output type (stdout/clipboard)
+    KPASSCLI_KDBPASS       Alternative way to specify the password file or executable
 
 EXAMPLES
     Get password for a specific entry:
@@ -82,22 +97,20 @@ SECURITY
     - Be cautious when using clipboard output on shared systems
 
 AUTHOR
-    [Your Name or Organization]
-
-VERSION
-    1.0.0
+    Dirk Jäger
 `
 
 func ShowMan() {
-    fmt.Println(manPage)
+	fmt.Print(manPage)
+	fmt.Println()
 }
 
 func ShowHelp() {
-    help := `Usage: kpasscli [OPTIONS]
+	help := `Usage: kpasscli [OPTIONS]
 
 Options:
     -kdbpath path    Path to KeePass database file
-    -kdbpass path    Path to password file or executable
+    -kdbpass path    Path to password file or executable, if not given asks for password interactively
     -item name       Entry to search for
     -fieldname field Field to retrieve (default: Password)
     -out type        Output type (stdout/clipboard)
@@ -109,5 +122,5 @@ Example:
 
 For more information, use -man`
 
-    fmt.Println(help)
+	fmt.Println(help)
 }

@@ -62,7 +62,7 @@ func main() {
 	}
 
 	// Resolve database path
-	dbPath := resolveDatabasePath(*kdbPath, cfg)
+	dbPath := keepass.ResolveDatabasePath(*kdbPath, cfg)
 	debug.Log("Resolved database path: %s", dbPath) // Debug-Log hinzugefügt
 	if dbPath == "" {
 		fmt.Println("Error: No KeePass database path provided")
@@ -70,7 +70,11 @@ func main() {
 	}
 
 	// Get database password
-	password, err := keepass.ResolvePassword(*kdbPass, cfg)
+	kdbpassenv := ""
+	if kpclipassparam := os.Getenv("KPASSCLI_KDBPASS"); kpclipassparam != "" {
+		kdbpassenv = kpclipassparam
+	}
+	password, err := keepass.ResolvePassword(*kdbPass, cfg, kdbpassenv)
 	if err != nil {
 		fmt.Printf("Error getting password: %v\n", err)
 		os.Exit(1)
@@ -97,7 +101,7 @@ func main() {
 
 	if len(results) == 0 {
 		fmt.Println("No items found")
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	if len(results) > 1 {
@@ -105,7 +109,7 @@ func main() {
 		for _, result := range results {
 			fmt.Printf("- %s\n", result.Path)
 		}
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	// Get output handler
@@ -125,22 +129,14 @@ func main() {
 	}
 }
 
-func resolveDatabasePath(flagPath string, cfg *config.Config) string {
-	if flagPath != "" {
-		return flagPath
-	}
-	if envPath := os.Getenv("KDBPATH"); envPath != "" {
-		return envPath
-	}
-	if cfg != nil && cfg.DatabasePath != "" {
-		return cfg.DatabasePath
-	}
-	return ""
-}
-
 func resolveOutputType(flagOut string, cfg *config.Config) output.Type {
 	if flagOut != "" {
 		return output.Type(flagOut)
+	}
+	if kpcliout := os.Getenv("KPASSCLI_OUT"); kpcliout != "" {
+		if output.IsValidType(kpcliout) {
+			return output.Type(kpcliout)
+		}
 	}
 	if cfg != nil && cfg.DefaultOutput != "" {
 		return output.Type(cfg.DefaultOutput)
