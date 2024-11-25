@@ -1,6 +1,7 @@
 package debug
 
 import (
+	"fmt"
 	"log"
 	"path/filepath"
 	"runtime"
@@ -20,6 +21,13 @@ func Enable() {
 //   - format: The format string for the log message, similar to fmt.Printf.
 //   - v: The values to be formatted according to the format string.
 func Log(format string, v ...interface{}) {
+	for i := range v {
+		val := v[i]
+		valStr := fmt.Sprintf("%v", val)
+		if strings.Contains(strings.ToLower(valStr), "passwor") {
+			v[i] = "!Password replaced! ****"
+		}
+	}
 	if enabled {
 		pc, file, line, ok := runtime.Caller(1)
 		if ok {

@@ -154,6 +154,7 @@ func (f *Finder) findBySubpath(query string) ([]Result, error) {
 
 	// Use finder options instead of default search options
 	opts := f.Options
+	opts.ExactMatch = true // Exact match for subpath search
 
 	debug.Log("Starting subpath search for query: %s", query)
 	debug.Log("Subpath: %v, TargetName: %s", subPath, targetName)
@@ -164,6 +165,14 @@ func (f *Finder) findBySubpath(query string) ([]Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("subpath search failed: %w", err)
 	}
+	// Filter results by query string
+	filteredResults := []Result{}
+	for _, result := range results {
+		if strings.Contains(result.Path, query) {
+			filteredResults = append(filteredResults, result)
+		}
+	}
+	results = filteredResults
 
 	return results, nil
 }
@@ -207,6 +216,7 @@ func (f *Finder) searchGroupForSubpath(
 				}
 			}
 			debug.Log("Checking entry: %s against target: %s", title, targetName)
+			// debug.Log("opts: %+v", opts)
 			if matchesName(title, targetName, opts) {
 				fullPath := filepath.Join(groupPath, title)
 				*results = append(*results, Result{
@@ -253,12 +263,16 @@ func (f *Finder) searchGroupForSubpath(
 
 // matchesName checks if two strings match according to the search options
 func matchesName(value, pattern string, opts SearchOptions) bool {
-	debug.Log("Matching value: %s against pattern: %s with options: %+v", value, pattern, opts)
+	// debug.Log("Matching value: %s against pattern: %s with options: %+v", value, pattern, opts)
 	if opts.CaseSensitive {
 		if opts.ExactMatch {
-			return value == pattern
+			res := value == pattern
+			debug.Log("Case-sensitive exact match: %s against pattern: %s with options: %+v, result: %v", value, pattern, opts, res)
+			return res
 		}
-		return strings.Contains(value, pattern)
+		res := strings.Contains(value, pattern)
+		debug.Log("Case-sensitive unexact match:%s against pattern: %s with options: %+v, result: %v", value, pattern, opts, res)
+		return res
 	}
 
 	// Case-insensitive comparison
@@ -266,9 +280,13 @@ func matchesName(value, pattern string, opts SearchOptions) bool {
 	patternLower := strings.ToLower(pattern)
 
 	if opts.ExactMatch {
-		return valueLower == patternLower
+		res := value == pattern
+		debug.Log("Exact match: %s against pattern: %s with options: %+v, result: %v", value, pattern, opts, res)
+		return res
 	}
-	return strings.Contains(valueLower, patternLower)
+	res := strings.Contains(valueLower, patternLower)
+	debug.Log("Unexact match: %s against pattern: %s with options: %+v, result: %v", value, pattern, opts, res)
+	return res
 }
 
 // GetField returns the value of the specified field from the entry
@@ -300,6 +318,7 @@ func (f *Finder) findByName(query string) ([]Result, error) {
 	debug.Log("Searching by name: %s", query) // Debug-Log hinzugefügt
 	var results []Result
 	opts := f.Options
+	opts.ExactMatch = true // Exact match for name search
 
 	// Start recursive search from root group
 	err := f.searchGroupForName(&f.db.Content.Root.Groups[0], "", query, &results, opts)
