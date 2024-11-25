@@ -53,7 +53,7 @@ Display brief help message
 
 ## SEARCH BEHAVIOR
 ###    Absolute Path
-eg. -item=/root/subpath/to/entry
+eg. -item=/root/subpath/subpath/to/entry
 
 Searches for an exact match at the specified location in the database.
 It returns the value of the item, per default the password or if the -field parameter is given, the value of this field.
