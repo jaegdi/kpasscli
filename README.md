@@ -23,11 +23,11 @@ Then it depends of the output config, if this is set to
 
 ## OPTIONS
 
-###    -kdbpath path
+###    -kdbpath path  or envvar KPASSCLI_KDBPATH  or config file
 Path to the KeePass database file. If not specified, the tool will look for
 the path in the KDBPATH environment variable or the config file.
 
-###    -kdbpass path
+###    -kdbpass path  or envvar KPASSCLI_KDBPASS  or config file
 Path to a file containing the database password or to an executable that outputs the password. For security reasons, the password cannot be provided directly on the command line.
 
 ###    -item name
@@ -53,41 +53,40 @@ Display brief help message
 
 ## SEARCH BEHAVIOR
 ###    Absolute Path
-eg. -item=/root/subpath/subpath/to/entry
+eg. **-item=/root/subpath/subpath/to/entry**
 
 Searches for an exact match at the specified location in the database.
-It returns the value of the item, per default the password or if the -field parameter is given, the value of this field.
+It returns the value of the item, per default the password or if the -fieldname parameter is given, the value of this field.
 
 ###    Relative Path
-eg. -item=subpath/to/entry
+eg. **-item=subpath/to/entry**
 
-Searches through all groups in the keepass-db for a matching subpath.
-If multiple matches are found, returns with error
-and lists all matches.
+Searches through all groups in the keepass-db for a matching subpath with the entry.
+If multiple matches are found, returns with error and lists all matches.
 
-Otherwise it returns the value of the item, per default the password or if the -field parameter is given, the value of this field.
+Otherwise it returns the value of the item, per default the password, or if the -fieldname parameter is given, the value of this field.
 
 ###    Simple Name (entry):
-Searches all entries regardless of location.
-If multiple matches are found, returns with error
-and lists all matches.
+eg.  **-item=entry**
 
-Otherwise it returns the value of the item, per default the password or if the -field parameter is given, the value of this field.
+Searches all matching entries regardless of location.
+If multiple matches are found, returns with error and lists all matches.
+
+Otherwise it returns the value of the item, per default the password or, if the -fieldname parameter is given, the value of this field.
 
 ## CONFIGURATION
 
 Configuration can be provided via a config.yaml file with the following fields:
-- database_path:       Default path to the KeePass database
-- default_output:      Default output type (stdout/clipboard)
-
-## Password retrieval methods
-take care, this can be unsecure if you not protect the password file
-or the executable properly
+- **database_path**:       Default path to the KeePass database
+- **default_output**:      Default output type (stdout/clipboard)
 - **password_file**:       file which contains the password to open the keepass db
 - **password_executable**: the path to the executable, that returns the password to open the keepass database.
 This method can be safe, if the executable itself asks for a general password to run it.
+## Password retrieval methods
+take care, this can be unsecure if you not protect the password file
+or the executable properly
 
-## ENVIRONMENT
+## ENVIRONMENT VARIABLES
 ###    KPASSCLI_KDBPATH
 Alternative way to specify the KeePass database path
 ###    KPASSCLI_OUT
@@ -105,6 +104,12 @@ Alternative way to specify the password file or executable
 
     # Copy password to clipboard:
     kpasscli -kdbpath=/path/to/db.kdbx -kdbpass=/path/to/pass.txt -item="Account" -out=clipboard
+
+    # Provide the password to open the keepass db by a executable
+    kpasscli -kdbpath=/path/to/db.kdbx -kdbpass  <(script_to_get_keepass-db_password) -item Account
+    # but also works without process substitution, kpasscli checks if the given password-file is a executable
+    # and execute it automatically
+    kpasscli -kdbpath=/path/to/db.kdbx -kdbpass script_to_get_keepass-db_password -item Account
 
 # SECURITY
 - Database passwords must be provided via file or executable
