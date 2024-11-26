@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -24,8 +25,9 @@ func Log(format string, v ...interface{}) {
 	for i := range v {
 		val := v[i]
 		valStr := fmt.Sprintf("%v", val)
-		if strings.Contains(strings.ToLower(valStr), "passwor") {
-			v[i] = "!Password replaced! ****"
+		if matched, _ := regexp.MatchString(`(?i)password|passwort|-----BEGIN RSA PRIVATE KEY-----|-----BEGIN CERTIFICATE-----`, valStr); matched {
+			re := regexp.MustCompile(`(?is)(passwor(:?d|t)|-----BEGIN RSA PRIVATE KEY-----|-----BEGIN CERTIFICATE-----).*`)
+			v[i] = re.ReplaceAllString(valStr, "$1 ********")
 		}
 	}
 	if enabled {

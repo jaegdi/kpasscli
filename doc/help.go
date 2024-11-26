@@ -48,6 +48,9 @@ OPTIONS
         - stdout: Print to standard output (default)
         - clipboard: Copy to system clipboard
 
+    -createConfig
+        Create an example configuration file
+
     -man
         Display this manual page
 
@@ -114,6 +117,7 @@ Options:
     -item name       Entry to search for
     -fieldname field Field to retrieve (default: Password)
     -out type        Output type (stdout/clipboard)
+    -createConfig    Create an example config file
     -man            Show full manual
     -help           Show this help
 

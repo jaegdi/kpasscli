@@ -23,11 +23,11 @@ Then it depends of the output config, if this is set to
 
 ## OPTIONS
 
-###    -kdbpath path  or envvar KPASSCLI_KDBPATH  or config file
+###    -kdbpath path  or envvar KPASSCLI_KDBPATH  or config file: database_path
 Path to the KeePass database file. If not specified, the tool will look for
 the path in the KDBPATH environment variable or the config file.
 
-###    -kdbpass path  or envvar KPASSCLI_KDBPASS  or config file
+###    -kdbpass path  or envvar KPASSCLI_KDBPASS  or config file: password_executable|password_file
 Path to a file containing the database password or to an executable that outputs the password. For security reasons, the password cannot be provided directly on the command line.
 
 ###    -item name
@@ -40,10 +40,13 @@ The entry to search for. This can be:
 The field to retrieve from the entry. Defaults to "Password".
 Common fields: Title, UserName, Password, URL, Notes
 
-###    -out type
+###    -out type   or envvar KPASSCLI_OUT  or config file: default_output
 How to output the retrieved value. Options:
 - stdout: Print to standard output (default)
 - clipboard: Copy to system clipboard
+
+###    -createConfig
+Create an example configuration file
 
 ###    -man
 Display this manual page
@@ -85,6 +88,9 @@ This method can be safe, if the executable itself asks for a general password to
 ## Password retrieval methods
 take care, this can be unsecure if you not protect the password file
 or the executable properly
+
+To create a example config file, kpasscli can be executed with parameter  -createConfig
+
 
 ## ENVIRONMENT VARIABLES
 ###    KPASSCLI_KDBPATH

@@ -30,6 +30,7 @@ func main() {
 		showMan       = flag.Bool("man", false, "Show manual page")
 		showHelp      = flag.Bool("help", false, "Show help message")
 		debugFlag     = flag.Bool("debug", false, "Enable debug logging")
+		createConfig  = flag.Bool("create-config", false, "Create an example config file")
 	)
 
 	flag.Usage = doc.ShowHelp
@@ -37,6 +38,15 @@ func main() {
 
 	if *debugFlag {
 		debug.Enable()
+	}
+
+	if *createConfig {
+		if err := config.CreateExampleConfig(); err != nil {
+			fmt.Printf("Error creating config file: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("Example config file created successfully.")
+		return
 	}
 
 	if *showMan {
