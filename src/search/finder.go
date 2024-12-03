@@ -5,14 +5,33 @@ import (
 	"path/filepath"
 	"strings"
 
-	"kpasscli/debug"
+	"kpasscli/src/debug"
 
 	"github.com/tobischo/gokeepasslib/v3"
 )
 
+// Result represents the outcome of a search operation.
+// It contains the path to the found entry and a pointer to the entry itself.
 type Result struct {
 	Path  string
 	Entry *gokeepasslib.Entry
+}
+
+var verify bool
+
+// Enable sets the debug logging flag to true.
+func EnableVerify() {
+	verify = true
+}
+
+// GetField returns the value of the specified field from the entry
+func (r *Result) GetField(fieldName string) (string, error) {
+	for _, v := range r.Entry.Values {
+		if strings.EqualFold(v.Key, fieldName) {
+			return v.Value.Content, nil
+		}
+	}
+	return "", fmt.Errorf("field '%s' not found", fieldName)
 }
 
 // SearchOptions defines the search behavior
@@ -80,7 +99,10 @@ func (f *Finder) Find(query string) ([]Result, error) {
 			return nil, fmt.Errorf("name search failed: %w", err)
 		}
 	}
-
+	// Wenn genau ein Eintrag gefunden wurde, gib den vollständigen Pfad aus
+	if verify && len(results) == 1 {
+		fmt.Printf("Found entry: %s\n", results[0].Path)
+	}
 	return results, nil
 }
 
@@ -262,6 +284,18 @@ func (f *Finder) searchGroupForSubpath(
 }
 
 // matchesName checks if two strings match according to the search options
+// matchesName checks if a given value matches a pattern based on the provided search options.
+// It supports both case-sensitive and case-insensitive comparisons, as well as exact and partial matches.
+//
+// Parameters:
+//   - value: The string to be searched.
+//   - pattern: The string pattern to search for.
+//   - opts: SearchOptions struct containing the following fields:
+//   - CaseSensitive: A boolean indicating if the match should be case-sensitive.
+//   - ExactMatch: A boolean indicating if the match should be exact.
+//
+// Returns:
+//   - A boolean indicating whether the value matches the pattern based on the search options.
 func matchesName(value, pattern string, opts SearchOptions) bool {
 	// debug.Log("Matching value: %s against pattern: %s with options: %+v", value, pattern, opts)
 	if opts.CaseSensitive {
@@ -289,31 +323,25 @@ func matchesName(value, pattern string, opts SearchOptions) bool {
 	return res
 }
 
-// GetField returns the value of the specified field from the entry
-func (r *Result) GetField(fieldName string) (string, error) {
-	// fieldNameLower := strings.ToLower(fieldName)
-
-	for _, v := range r.Entry.Values {
-		if strings.EqualFold(v.Key, fieldName) {
-			return v.Value.Content, nil
-		}
-	}
-
-	return "", fmt.Errorf("field '%s' not found", fieldName)
-}
-
-// String returns a string representation of the result
-func (r *Result) String() string {
-	var title string
-	for _, v := range r.Entry.Values {
-		if v.Key == "Title" {
-			title = v.Value.Content
-			break
-		}
-	}
-	return fmt.Sprintf("%s [%s]", r.Path, title)
-}
-
+// findByName searches for entries by their name within the database.
+// It performs an exact match search based on the provided query string.
+//
+// Parameters:
+//   - query: The name to search for.
+//
+// Returns:
+//   - A slice of Result containing the search results.
+//   - An error if the search operation fails.
+//
+// Example usage:
+//
+//	results, err := finder.findByName("exampleName")
+//	if err != nil {
+//	    log.Fatalf("Search failed: %v", err)
+//	}
+//	for _, result := range results {
+//	    fmt.Println(result)
+//	}
 func (f *Finder) findByName(query string) ([]Result, error) {
 	debug.Log("Searching by name: %s", query) // Debug-Log hinzugefügt
 	var results []Result
@@ -329,6 +357,20 @@ func (f *Finder) findByName(query string) ([]Result, error) {
 	return results, nil
 }
 
+// searchGroupForName searches for entries with a matching name within a given group and its subgroups.
+// It appends the results to the provided results slice.
+//
+// Parameters:
+//
+//	group - The group to search within.
+//	currentPath - The current path of the group being searched.
+//	targetName - The name to search for within the group's entries.
+//	results - A pointer to a slice where the search results will be appended.
+//	opts - Options for customizing the search behavior.
+//
+// Returns:
+//
+//	An error if the search encounters an issue, otherwise nil.
 func (f *Finder) searchGroupForName(
 	group *gokeepasslib.Group,
 	currentPath string,

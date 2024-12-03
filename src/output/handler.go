@@ -2,7 +2,7 @@ package output
 
 import (
 	"fmt"
-	"kpasscli/debug"
+	"kpasscli/src/debug"
 
 	// Hinzugefügt für Debug-Logs
 	"golang.design/x/clipboard"

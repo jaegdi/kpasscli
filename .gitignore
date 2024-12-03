@@ -28,3 +28,7 @@ go.work.sum
 
 .vscode
 old-version
+generate_go_documentation.sh
+godoc
+
+www/

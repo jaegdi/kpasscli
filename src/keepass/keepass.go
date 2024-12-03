@@ -2,8 +2,8 @@ package keepass
 
 import (
 	"fmt"
-	"kpasscli/config"
-	"kpasscli/debug"
+	"kpasscli/src/config"
+	"kpasscli/src/debug"
 	"os"
 	"os/exec"
 	"strings"
@@ -87,7 +87,7 @@ func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string) (s
 	}
 	info, err := os.Stat(passfile)
 	if err != nil {
-		debug.Log("passfile:", passfile, "Error:", err.Error())
+		debug.Log("passfile: %v Error: %v", passfile, err.Error())
 		return "", fmt.Errorf("password must be provided via file or executable")
 	}
 	debug.Log("%v", info)
@@ -132,6 +132,11 @@ func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string) (s
 	return "", fmt.Errorf("password must be provided via file or executable")
 }
 
+// getPasswordFromPrompt prompts the user to enter a password securely.
+// It reads the password input without echoing it to the terminal, trims any
+// leading or trailing whitespace, and returns the password as a string.
+// If an error occurs while reading the password, it returns an empty string
+// and the encountered error.
 func getPasswordFromPrompt() (string, error) {
 	// If no valid file or executable is found, prompt the user for the password
 	fmt.Print("Enter password: ")
@@ -148,6 +153,19 @@ func getPasswordFromPrompt() (string, error) {
 	return "", err
 }
 
+// ResolveDatabasePath determines the path to the KeePass database file.
+// It checks the following sources in order of precedence:
+// 1. The provided flagPath argument. If it is not empty, it is returned.
+// 2. The environment variable "KPASSCLI_KDBPATH". If it is set, its value is returned.
+// 3. The DatabasePath field in the provided config.Config object. If it is not nil and its DatabasePath field is not empty, it is returned.
+// If none of these sources provide a path, an empty string is returned.
+//
+// Parameters:
+// - flagPath: A string representing the path provided via a command-line flag.
+// - cfg: A pointer to a config.Config object that may contain the database path.
+//
+// Returns:
+// A string representing the resolved database path, or an empty string if no path is found.
 func ResolveDatabasePath(flagPath string, cfg *config.Config) string {
 	if flagPath != "" {
 		return flagPath

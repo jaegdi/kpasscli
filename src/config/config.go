@@ -1,7 +1,7 @@
 package config
 
 import (
-	"kpasscli/debug"
+	"kpasscli/src/debug"
 	"os"
 	"path/filepath"
 

@@ -8,54 +8,63 @@ const manPage = `NAME
     kpasscli - KeePass database command line interface
 
 SYNOPSIS
-    kpasscli [-kdbpath path] [-kdbpass path] -item name [-fieldname field] [-out type] [-man] [-help]
+    kpasscli [-kdbpath|-p path] [-kdbpass|-w path] -item|-i name [-fieldname|-f field] [-out|-o type] [-man|-m] [-help|-h]
 
 DESCRIPTION
     kpasscli is a command-line tool for querying KeePass database files.
     It allows retrieving entries and their fields using various search methods.
 
-    If no -kdbpass is given, then kpasscli asks for the password interactively by a passwored prompt.
+    If no -kdbpass|-w is given, then kpasscli asks for the password interactively by a passwored prompt.
 
     If the item is found, it takes per default the value of the password field or if
-    the parameter -fieldname is given, the value of this field.
+    the parameter -fieldname|-f is given, the value of this field.
 
     Then it depends of the output config, if this is set to
     - stdout: The value is printed to stdout
     - clipboard: The value is copied into the clipboard and can be pasted wherever it is needed
 
 OPTIONS
-    -kdbpath path
+    -kdbpath|-p path
         Path to the KeePass database file. If not specified, the tool will look for
         the path in the KDBPATH environment variable or the config file.
 
-    -kdbpass path
+    -kdbpass|-w password-file
         Path to a file containing the database password or to an executable that
         outputs the password. For security reasons, the password cannot be provided
         directly on the command line.
 
-    -item name
+    -item|-i name
         The entry to search for. This can be:
         - An absolute path starting with "/" (e.g., "/Personal/Banking/Account")
         - A relative path (e.g., "Banking/Account")
         - A simple name (e.g., "Account")
 
-    -fieldname field
+    -fieldname|-f field
         The field to retrieve from the entry. Defaults to "Password".
         Common fields: Title, UserName, Password, URL, Notes
 
-    -out type
+    -out|-o type
         How to output the retrieved value. Options:
         - stdout: Print to standard output (default)
         - clipboard: Copy to system clipboard
 
-    -createConfig
+    -case-sensitive|-c
+        Enable case-sensitive search
+
+    -exact-match|-e
+        Enable exact match search
+
+    -create-config|-cc
         Create an example configuration file
 
-    -man
+    -man|-m
         Display this manual page
 
-    -help
+    -help|-h
         Display brief help message
+
+    -debug|-d
+        Enable debug logging
 
 SEARCH BEHAVIOR
     Absolute Path (/path/to/entry):
@@ -87,12 +96,15 @@ ENVIRONMENT
 EXAMPLES
     Get password for a specific entry:
         kpasscli -kdbpath=/path/to/db.kdbx -kdbpass=/path/to/pass.txt -item="/Personal/Banking/Account"
+        kpasscli -p=/path/to/db.kdbx -w=/path/to/pass.txt -i="/Personal/Banking/Account"
 
     Get username instead of password:
         kpasscli -kdbpath=/path/to/db.kdbx -kdbpass=/path/to/pass.txt -item="Account" -fieldname=UserName
+        kpasscli -p=/path/to/db.kdbx -w=/path/to/pass.txt -i="Account" -f=UserName
 
     Copy password to clipboard:
         kpasscli -kdbpath=/path/to/db.kdbx -kdbpass=/path/to/pass.txt -item="Account" -out=clipboard
+        kpasscli -p=/path/to/db.kdbx -w=/path/to/pass.txt -i="Account" -o=clipboard
 
 SECURITY
     - Database passwords must be provided via file or executable
@@ -112,19 +124,34 @@ func ShowHelp() {
 	help := `Usage: kpasscli [OPTIONS]
 
 Options:
-    -kdbpath path    Path to KeePass database file
-    -kdbpass path    Path to password file or executable, if not given asks for password interactively
-    -item name       Entry to search for
-    -fieldname field Field to retrieve (default: Password)
-    -out type        Output type (stdout/clipboard)
-    -createConfig    Create an example config file
-    -man            Show full manual
-    -help           Show this help
+    -kdbpath|-p path      Path to KeePass database file
+    -kdbpass|-w path      Path to password file or executable, if not given asks for password interactively
+    -item|-i name         Entry to search for
+    -fieldname|-f field   Field to retrieve (default: Password)
+    -out|-o type         Output type (stdout/clipboard)
+    -case-sensitive|-c   Enable case-sensitive search
+    -exact-match|-e      Enable exact match search
+    -create-config|-cc   Create an example config file
+    -debug|-d           Enable debug logging
+    -man|-m             Show full manual
+    -help|-h            Show this help
 
 Example:
     kpasscli -kdbpath=/path/to/db.kdbx -kdbpass=/path/to/pass.txt -item="/Personal/Banking/Account"
+    kpasscli -p=/path/to/db.kdbx -w=/path/to/pass.txt -i="/Personal/Banking/Account"
 
-For more information, use -man`
+    if keepass-db file and password-file|password-exec and output type is set in the config file
+    then it's enough to specify the item and my be the fieldname.
+
+    # for password
+    kpasscli -i=/Personal/Banking/Account
+    # or if Account is uniq in the keepass-db
+    kasscli -i=Account
+
+    # for username
+    kasscli -i=/Personal/Banking/Account -f=UserName
+
+For more information, use -man|-m`
 
 	fmt.Println(help)
 }
