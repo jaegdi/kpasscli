@@ -17,7 +17,7 @@ import (
 
 type Flags struct {
 	KdbPath       string
-	KdbPass       string
+	kdbpassword   string
 	Item          string
 	FieldName     string
 	Out           string
@@ -37,8 +37,8 @@ func parseFlags() *Flags {
 	flag.StringVar(&flags.KdbPath, "kdbpath", "", "Path to KeePass database file")
 	flag.StringVar(&flags.KdbPath, "p", "", "Path to KeePass database file (shorthand)")
 
-	flag.StringVar(&flags.KdbPass, "kdbpass", "", "Password file or executable to get password")
-	flag.StringVar(&flags.KdbPass, "w", "", "Password file or executable to get password (shorthand)")
+	flag.StringVar(&flags.kdbpassword, "kdbpassword", "", "Password file or executable to get password")
+	flag.StringVar(&flags.kdbpassword, "w", "", "Password file or executable to get password (shorthand)")
 
 	flag.StringVar(&flags.Item, "item", "", "Item to search for")
 	flag.StringVar(&flags.Item, "i", "", "Item to search for (shorthand)")
@@ -81,7 +81,7 @@ func parseFlags() *Flags {
 // flags. The main function supports the following flags:
 //
 // -kdbpath|-p: Path to KeePass database file
-// -kdbpass|-w: Password file or executable to get password
+// -kdbpassword|-w: Password file or executable to get password
 // -item|-i: Item to search for
 // -fieldname|-f: Field name to retrieve (default: "Password")
 // -out|-o: Output type (clipboard/stdout)
@@ -160,11 +160,11 @@ func main() {
 	}
 
 	// Get database password
-	kdbpassenv := ""
-	if kpclipassparam := os.Getenv("KPASSCLI_KDBPASS"); kpclipassparam != "" {
-		kdbpassenv = kpclipassparam
+	kdbpasswordenv := ""
+	if kpclipassparam := os.Getenv("KPASSCLI_kdbpassword"); kpclipassparam != "" {
+		kdbpasswordenv = kpclipassparam
 	}
-	password, err := keepass.ResolvePassword(flags.KdbPass, cfg, kdbpassenv)
+	password, err := keepass.ResolvePassword(flags.kdbpassword, cfg, kdbpasswordenv)
 	if err != nil {
 		fmt.Printf("Error getting password: %v\n", err)
 		os.Exit(1)
