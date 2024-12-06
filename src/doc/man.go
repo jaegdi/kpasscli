@@ -85,6 +85,7 @@ CONFIGURATION
     Configuration can be provided via a config.yaml file with the following fields:
     - database_path:       Default path to the KeePass database
     - default_output:      Default output type (stdout/clipboard)
+
     # Password retrieval methods, take care, this can be unsecure if you not protect the password file
     # or the executable properly
     - password_file:       file which contains the password to open the keepass db
@@ -94,7 +95,7 @@ CONFIGURATION
 ENVIRONMENT
     KPASSCLI_KDBPATH       Alternative way to specify the KeePass database path
     KPASSCLI_OUT           Alternative way to specify the output type (stdout/clipboard)
-    KPASSCLI_kdbpassword       Alternative way to specify the password file or executable
+    KPASSCLI_kdbpassword   Alternative way to specify the password file or executable
 
 EXAMPLES
     Get password for a specific entry:
