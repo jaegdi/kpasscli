@@ -110,6 +110,8 @@ Alternative way to specify the password file or executable
 
     # Copy password to clipboard:
     kpasscli -kdbpath=/path/to/db.kdbx -kdbpass=/path/to/pass.txt -item="Account" -out=clipboard
+    # or with short flags
+    kpasscli -p /path/to/db.kdbx -w /path/to/pass.txt -i Acount -o clipboard
 
     # Provide the password to open the keepass db by a executable
     kpasscli -kdbpath=/path/to/db.kdbx -kdbpass  <(script_to_get_keepass-db_password) -item Account
