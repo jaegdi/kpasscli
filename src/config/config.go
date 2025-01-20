@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"kpasscli/src/debug"
 	"os"
 	"path/filepath"
@@ -71,4 +72,13 @@ func CreateExampleConfig() error {
 	}
 	configPath := filepath.Join(".", "config.yaml")
 	return os.WriteFile(configPath, data, 0644)
+}
+
+func (c *Config) Print() {
+	fmt.Println("Current Configuration:")
+	fmt.Println("---------------------")
+	fmt.Printf("Database Path: %s\n", c.DatabasePath)
+	fmt.Printf("Default Output: %s\n", c.DefaultOutput)
+	fmt.Printf("Password File: %s\n", c.PasswordFile)
+	fmt.Printf("Password Executable: %s\n", c.PasswordExecutable)
 }
