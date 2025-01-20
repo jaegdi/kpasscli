@@ -14,7 +14,11 @@ DESCRIPTION
     kpasscli is a command-line tool for querying KeePass database files.
     It allows retrieving entries and their fields using various search methods.
 
-    If no -kdbpassword|-w is given, then kpasscli asks for the password interactively by a passwored prompt.
+    The intention for this tool is to use it in automation scripts, to get secret strings like
+    cert keys, key passwords, user or tech. user passwords, tokens, ..., which are stored in a keepass-db.
+    And it supports optional to open the keepass-db without an interactive password prompt.
+
+    If no -kdbpassword|-w is given, then kpasscli asks for the password to open the keepass-db interactively by a passwored prompt.
 
     If the item is found, it takes per default the value of the password field or if
     the parameter -fieldname|-f is given, the value of this field.
@@ -87,7 +91,7 @@ CONFIGURATION
     - default_output:      Default output type (stdout/clipboard)
 
     # Password retrieval methods, take care, this can be unsecure if you not protect the password file
-    # or the executable properly
+    # or the executable properly. See SECURITY
     - password_file:       file which contains the password to open the keepass db
     - password_executable: the path to the executable, that returns the password to open the keepass database.
                            This method can be safe, if the executable itself asks for a general password to run it.
@@ -96,6 +100,15 @@ ENVIRONMENT
     KPASSCLI_KDBPATH       Alternative way to specify the KeePass database path
     KPASSCLI_OUT           Alternative way to specify the output type (stdout/clipboard)
     KPASSCLI_kdbpassword   Alternative way to specify the password file or executable
+
+SECURITY
+    To enable noninteractive access to open the keepass-db, there are two options:
+    - provide a password-file
+    - provide a executable that prints the password to STDOUT
+
+    In both cases there are security risks, if this is not well prepared.
+
+    A secure way is to use a wallet that is opened with the user login, like kwallet, if you use KDE Desktop.
 
 EXAMPLES
     Get password for a specific entry:

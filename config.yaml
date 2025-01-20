@@ -1,0 +1,4 @@
+database_path: /home/dirk/rockstor_dokumente/_Privates/Passwörter.kdbx
+default_output: stdout
+password_file: /home/dirk/.config/.kpw.txt
+password_executable: ""
