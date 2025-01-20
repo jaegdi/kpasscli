@@ -7,17 +7,18 @@ import (
 
 // parses command-line flags, and supports the following flags:
 //
-// -kdbpath|-p: Path to KeePass database file
-// -kdbpassword|-w: Password file or executable to get password
-// -item|-i: Item to search for
-// -fieldname|-f: Field name to retrieve (default: "Password")
-// -out|-o: Output type (clipboard/stdout)
-// -case-sensitive|-c: Enable case-sensitive search
-// -exact-match|-e: Enable exact match search
-// -man|-m: Show manual page
-// -help|-h: Show help message
-// -debug|-d: Enable debug logging
-// -create-config|-cc: Create an example config file
+// -kdbpath | -p: Path to KeePass database file
+// -kdbpassword | -w: Password file or executable to get password
+// -item | -i: Item to search for
+// -fieldname | -f: Field name to retrieve (default: "Password")
+// -out | -o: Output type (clipboard/stdout)
+// -case-sensitive | -c: Enable case-sensitive search
+// -exact-match | -e: Enable exact match search
+// -man | -m: Show manual page
+// -help | -h: Show help message
+// -debug | -d: Enable debug logging
+// -create-config | -cc: Create an example config file
+// -print-config | -pc: print the current detected config to stdout
 
 type Flags struct {
 	KdbPath       string
@@ -32,7 +33,7 @@ type Flags struct {
 	DebugFlag     bool
 	VerifyFlag    bool
 	CreateConfig  bool
-	PrintConfig   bool // Add this new field
+	PrintConfig   bool
 }
 
 func ParseFlags() *Flags {
