@@ -17,6 +17,7 @@ type Config struct {
 	DefaultOutput      string `yaml:"default_output"`
 	PasswordFile       string `yaml:"password_file"`
 	PasswordExecutable string `yaml:"password_executable"`
+	ConfigfilePath     string `yaml:"configfile_path"`
 }
 
 // Load reads and parses the configuration file.
@@ -52,6 +53,7 @@ func Load() (*Config, error) {
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, err
 	}
+	config.ConfigfilePath = configPath
 	debug.Log("Loaded config: %+v\n", config)
 	return &config, nil
 }
@@ -59,7 +61,7 @@ func Load() (*Config, error) {
 // CreateExampleConfig creates an example configuration file in the current directory.
 // Returns:
 //   - error: Any error encountered during the creation of the config file.
-func CreateExampleConfig() error {
+func CreateExampleConfig(configPath string) error {
 	exampleConfig := Config{
 		DatabasePath:       "/path/to/your/database.kdbx",
 		DefaultOutput:      "stdout",
@@ -70,12 +72,11 @@ func CreateExampleConfig() error {
 	if err != nil {
 		return err
 	}
-	configPath := filepath.Join(".", "config.yaml")
 	return os.WriteFile(configPath, data, 0644)
 }
 
 func (c *Config) Print() {
-	fmt.Println("Current Configuration:")
+	fmt.Printf("Current Configuration: %s\n", c.ConfigfilePath)
 	fmt.Println("---------------------")
 	fmt.Printf("Database Path: %s\n", c.DatabasePath)
 	fmt.Printf("Default Output: %s\n", c.DefaultOutput)

@@ -2,75 +2,20 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"log"
 	"os"
 
-	"kpasscli/cmd"
 	"kpasscli/src/config"
 	"kpasscli/src/debug"
-	"kpasscli/src/doc"
 	"kpasscli/src/keepass"
 	"kpasscli/src/output"
 	"kpasscli/src/search"
 )
 
 // main is the entry point of the kpasscli application. It initializes logging,
-//
-// The function performs the following steps:
-// 1. Initializes logging based on the debug flag.
-// 2. Creates an example config file if the create-config flag is set.
-// 3. Displays the manual page if the man flag is set.
-// 4. Displays the help message if the help flag is set.
-// 5. Loads the configuration file.
-// 6. Resolves the KeePass database path.
-// 7. Retrieves the database password.
-// 8. Opens the KeePass database.
-// 9. Searches for the specified item in the database.
-// 10. Outputs the value of the specified field using the specified output handler.
 func main() {
-	// Initialize logging
-	log.SetFlags(log.LstdFlags)
-	flags := cmd.ParseFlags()
-	flag.Usage = doc.ShowHelp
-	flag.Parse()
-
-	// switch toggles
-	if flags.DebugFlag {
-		debug.Enable()
-	}
-	if flags.VerifyFlag {
-		search.EnableVerify()
-	}
-
-	// Handle special flags and help messages
-	if flags.CreateConfig {
-		if err := config.CreateExampleConfig(); err != nil {
-			fmt.Printf("Error creating config file: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Println("Example config file created successfully.")
-		return
-	}
-	if flags.PrintConfig {
-		cfg, err := config.Load()
-		if err != nil {
-			fmt.Printf("Error loading config: %v\n", err)
-			os.Exit(1)
-		}
-		cfg.Print()
-		return
-	}
-	if flags.ShowMan {
-		doc.ShowMan()
-		return
-	}
-	if flags.ShowHelp {
-		doc.ShowHelp()
-		return
-	}
-
+	// Initialize cli
+	flags := Init()
 	//
 	// here starts the real work
 	//
