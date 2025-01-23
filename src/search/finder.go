@@ -2,6 +2,7 @@ package search
 
 import (
 	"fmt" // Hinzugefügt für Debug-Logs
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -101,7 +102,7 @@ func (f *Finder) Find(query string) ([]Result, error) {
 	}
 	// Wenn genau ein Eintrag gefunden wurde, gib den vollständigen Pfad aus
 	if verify && len(results) == 1 {
-		fmt.Printf("Found entry: %s\n", results[0].Path)
+		fmt.Fprintf(os.Stderr, "Found one entry: %s\n", results[0].Path)
 	}
 	return results, nil
 }

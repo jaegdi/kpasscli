@@ -28,14 +28,14 @@ func main() {
 
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Printf("Warning: Could not load config file: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Warning: Could not load config file: %v\n", err)
 	}
 
 	// Resolve database path
 	dbPath := keepass.ResolveDatabasePath(flags.KdbPath, cfg)
 	debug.Log("Resolved database path: %s", dbPath) // Debug-Log hinzugefügt
 	if dbPath == "" {
-		fmt.Println("Error: No KeePass database path provided")
+		fmt.Fprintf(os.Stderr, "Error: No KeePass database path provided")
 		os.Exit(1)
 	}
 
@@ -46,14 +46,14 @@ func main() {
 	}
 	password, err := keepass.ResolvePassword(flags.KdbPassword, cfg, kdbpasswordenv)
 	if err != nil {
-		fmt.Printf("Error getting password: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error getting password: %v\n", err)
 		os.Exit(1)
 	}
 
 	// Open database
 	db, err := keepass.OpenDatabase(dbPath, password)
 	if err != nil {
-		fmt.Printf("Error opening database: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error opening database: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -65,19 +65,19 @@ func main() {
 	}
 	results, err := finder.Find(flags.Item)
 	if err != nil {
-		fmt.Printf("Error searching for item: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error searching for item: %v\n", err)
 		os.Exit(1)
 	}
 
 	if len(results) == 0 {
-		fmt.Println("No items found")
+		fmt.Fprintf(os.Stderr, "No items found")
 		os.Exit(1)
 	}
 
 	if len(results) > 1 {
-		fmt.Println("Multiple items found:")
+		fmt.Fprintf(os.Stderr, "Multiple items found:")
 		for _, result := range results {
-			fmt.Printf("- %s\n", result.Path)
+			fmt.Fprintf(os.Stderr, "- %s\n", result.Path)
 		}
 		os.Exit(1)
 	}
@@ -89,12 +89,12 @@ func main() {
 	// Get and output field value
 	value, err := results[0].GetField(flags.FieldName)
 	if err != nil {
-		fmt.Printf("Error getting field: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error getting field: %v\n", err)
 		os.Exit(1)
 	}
 
 	if err := handler.Output(value); err != nil {
-		fmt.Printf("Error outputting value: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error outputting value: %v\n", err)
 		os.Exit(1)
 	}
 }

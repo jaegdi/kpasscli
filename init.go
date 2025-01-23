@@ -34,16 +34,16 @@ func Init() *cmd.Flags {
 		filename := "config.yaml"
 		configPath := filepath.Join(".", filename)
 		if err := config.CreateExampleConfig(configPath); err != nil {
-			fmt.Printf("Error creating config file: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error creating config file: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Example config file '%s' created successfully.", configPath)
+		fmt.Fprintf(os.Stderr, "Example config file '%s' created successfully.", configPath)
 		os.Exit(0)
 	}
 	if flags.PrintConfig {
 		cfg, err := config.Load()
 		if err != nil {
-			fmt.Printf("Error loading config: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
 			os.Exit(1)
 		}
 		cfg.Print()

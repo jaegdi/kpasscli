@@ -76,10 +76,10 @@ func CreateExampleConfig(configPath string) error {
 }
 
 func (c *Config) Print() {
-	fmt.Printf("Current Configuration: %s\n", c.ConfigfilePath)
-	fmt.Println("---------------------")
-	fmt.Printf("Database Path: %s\n", c.DatabasePath)
-	fmt.Printf("Default Output: %s\n", c.DefaultOutput)
-	fmt.Printf("Password File: %s\n", c.PasswordFile)
-	fmt.Printf("Password Executable: %s\n", c.PasswordExecutable)
+	fmt.Fprintf(os.Stderr, "Current Configuration: %s\n", c.ConfigfilePath)
+	fmt.Fprintf(os.Stderr, "---------------------")
+	fmt.Fprintf(os.Stderr, "Database Path: %s\n", c.DatabasePath)
+	fmt.Fprintf(os.Stderr, "Default Output: %s\n", c.DefaultOutput)
+	fmt.Fprintf(os.Stderr, "Password File: %s\n", c.PasswordFile)
+	fmt.Fprintf(os.Stderr, "Password Executable: %s\n", c.PasswordExecutable)
 }
