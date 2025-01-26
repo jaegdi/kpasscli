@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"kpasscli/cmd"
+	"kpasscli/src/cmd"
 	"kpasscli/src/config"
 	"kpasscli/src/debug"
 	"kpasscli/src/doc"

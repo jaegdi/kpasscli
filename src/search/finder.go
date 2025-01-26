@@ -177,7 +177,7 @@ func (f *Finder) findBySubpath(query string) ([]Result, error) {
 
 	// Use finder options instead of default search options
 	opts := f.Options
-	opts.ExactMatch = true // Exact match for subpath search
+	// opts.ExactMatch = false // Exact match for subpath search
 
 	debug.Log("Starting subpath search for query: %s", query)
 	debug.Log("Subpath: %v, TargetName: %s", subPath, targetName)
@@ -347,7 +347,7 @@ func (f *Finder) findByName(query string) ([]Result, error) {
 	debug.Log("Searching by name: %s", query) // Debug-Log hinzugefügt
 	var results []Result
 	opts := f.Options
-	opts.ExactMatch = true // Exact match for name search
+	// opts.ExactMatch = false // Exact match for name search
 
 	// Start recursive search from root group
 	err := f.searchGroupForName(&f.db.Content.Root.Groups[0], "", query, &results, opts)
