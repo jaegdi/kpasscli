@@ -1,10 +1,11 @@
+
 # kpasscli
 
 A keepass client to query item values from a keepass db by cli.
 
 
 ## NAME
-kpasscli - KeePass database command line interface
+kpasscli - KeePass database command line interface for automation
 
 ## SYNOPSIS
 kpasscli [-kdbpath path] [-kdbpass path] -item name [-fieldname field] [-out type] [-man] [-help]
@@ -130,3 +131,4 @@ Dirk Jäger
 # LICENSE
 GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
 `
+
