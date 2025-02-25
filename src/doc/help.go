@@ -8,18 +8,18 @@ func ShowHelp() {
 	help := `Usage: kpasscli [OPTIONS]
 
 Options:
-    -kdbpath|-p path      Path to KeePass database file
-    -kdbpassword|-w path  Path to password file or executable, if not given asks for password interactively
-    -item|-i name         Entry to search for
-    -fieldname|-f field   Field to retrieve (default: Password)
-    -out|-o type          Output type (stdout/clipboard)
-    -case-sensitive|-c    Enable case-sensitive search
-    -exact-match|-e       Enable exact match search
-    -create-config|-cc    Create an example config file
-    -verify|-v            Show the path of found item
-    -debug|-d             Enable debug logging
-    -man|-m               Show full manual
-    -help|-h              Show this help
+    -kdbpath | -p path      Path to KeePass database file
+    -kdbpassword | -w path  Path to password file or executable, if not given asks for password interactively
+    -item | -i name         Entry to search for
+    -fieldname | -f field   Field to retrieve (default: Password)
+    -out | -o type          Output type (stdout/clipboard)
+    -case-sensitive | -c    Enable case-sensitive search
+    -exact-match | -e       Enable exact match search
+    -create-config | -cc    Create an example config file
+    -verify | -v            Show the path of found item
+    -debug | -d             Enable debug logging
+    -man | -m               Show full manual
+    -help | -h              Show this help
 
 Example:
     kpasscli -kdbpath=/path/to/db.kdbx -kdbpassword=/path/to/pass.txt -item="/Personal/Banking/Account"
