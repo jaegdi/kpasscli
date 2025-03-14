@@ -41,7 +41,7 @@ func Init() *cmd.Flags {
 		os.Exit(0)
 	}
 	if flags.PrintConfig {
-		cfg, err := config.Load()
+		cfg, err := config.Load(flags.ConfigPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
 			os.Exit(1)

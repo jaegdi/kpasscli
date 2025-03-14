@@ -26,6 +26,7 @@ type Flags struct {
 	Item          string
 	FieldName     string
 	Out           string
+	ConfigPath    string
 	CaseSensitive bool
 	ExactMatch    bool
 	ShowMan       bool
@@ -56,7 +57,7 @@ func ParseFlags() *Flags {
 	flag.StringVar(&flags.Out, "o", "", "Output type (clipboard/stdout) (shorthand)")
 
 	flag.BoolVar(&flags.CaseSensitive, "case-sensitive", false, "Enable case-sensitive search")
-	flag.BoolVar(&flags.CaseSensitive, "c", false, "Enable case-sensitive search (shorthand)")
+	flag.BoolVar(&flags.CaseSensitive, "cs", false, "Enable case-sensitive search (shorthand)")
 
 	flag.BoolVar(&flags.ExactMatch, "exact-match", false, "Enable exact match search")
 	flag.BoolVar(&flags.ExactMatch, "e", false, "Enable exact match search (shorthand)")
@@ -78,6 +79,9 @@ func ParseFlags() *Flags {
 
 	flag.BoolVar(&flags.PrintConfig, "print-config", false, "Print current configuration")
 	flag.BoolVar(&flags.PrintConfig, "pc", false, "Print current configuration (shorthand)")
+
+	flag.StringVar(&flags.ConfigPath, "config", "~/.config/kpasscli/config.yaml", "Path to configuration file")
+	flag.StringVar(&flags.ConfigPath, "c", "~/.config/kpasscli/config.yaml", "Path to configuration file (shorthand)")
 
 	flag.Usage = doc.ShowHelp
 	flag.Parse()

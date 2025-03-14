@@ -26,7 +26,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	cfg, err := config.Load()
+	cfg, err := config.Load(flags.ConfigPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: Could not load config file: %v\n", err)
 	}

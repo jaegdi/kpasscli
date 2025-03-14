@@ -39,8 +39,10 @@ type Config struct {
 //     data.
 //   - error: An error object if any error occurred during the loading or
 //     unmarshalling of the configuration file, otherwise nil.
-func Load() (*Config, error) {
-	configPath := filepath.Join(".", "config.yaml")
+func Load(configPath string) (*Config, error) {
+	if configPath == "" {
+		configPath = filepath.Join(".", "config.yaml")
+	}
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		configPath = filepath.Join(os.Getenv("HOME"), ".config", "kpasscli", "config.yaml")
 	}

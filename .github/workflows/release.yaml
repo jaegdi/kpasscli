@@ -9,22 +9,30 @@ jobs:
   build:
     runs-on: rhel-7
     steps:
-      - uses: actions/checkout@v3
+    - name: Check out code
+      uses: actions/checkout@v2
 
-      - name: Build
-        run: |
-          # Your build commands here
-          # Example:
-          # make build
-          go mod tidy
-          go build -v -o dist/kpasscli
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.23.7'
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            # List your binary files here
-            # Example:
-            # dist/myapp
-            # dist/myapp.exe
-            dist/kpasscli
+    - name: Install dependencies
+      run: |
+        sudo yum update -y
+        sudo yum install -y libx11-dev
+
+    - name: Build
+      run: |
+        go mod tidy
+        go build -v -o dist/kpasscli
+
+    - name: Run tests
+      run: go test -v ./...
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/kpasscli
+

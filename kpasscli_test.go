@@ -8,7 +8,7 @@ import (
 )
 
 func runKpasscli(args ...string) (string, error) {
-	cmd := exec.Command("./kpasscli", args...)
+	cmd := exec.Command("./dist/kpasscli", append([]string{"-c", "config.yaml"}, args...)...)
 	output, err := cmd.CombinedOutput()
 	return strings.TrimSpace(string(output)), err
 }
