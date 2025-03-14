@@ -13,6 +13,11 @@ jobs:
       image: registry.access.redhat.com/ubi7/ubi:latest
 
     steps:
+      - name: Install dependencies
+        run: |
+          sudo yum -y update
+          sudo yum -y install glibc glibc-devel libstdc++ libstdc++-devel libx11-dev
+
       - name: Checkout code
         uses: actions/checkout@v2
         with:
@@ -25,11 +30,6 @@ jobs:
           lfs: false
           submodules: false
           set-safe-directory: true
-
-      - name: Install dependencies
-        run: |
-          sudo yum -y update
-          sudo yum -y install glibc glibc-devel libstdc++ libstdc++-devel libx11-dev
 
       - name: Set up Go
         uses: actions/setup-go@v2
