@@ -8,7 +8,7 @@
 *.so
 *.dylib
 
-kpasscli
+kpasscli*
 
 # Test binary, built with `go test -c`
 *.test
@@ -32,6 +32,3 @@ generate_go_documentation.sh
 godoc
 
 www/
-
-configy.yaml
-dist
