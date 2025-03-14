@@ -1,4 +1,4 @@
-name: Release-RH-Ubi7
+name: Release-RH-Ubi8
 
 on:
   push:
@@ -10,14 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: registry.access.redhat.com/ubi7/ubi:latest
+      image: registry.access.redhat.com/ubi8/ubi:latest
 
     steps:
       - name: Install dependencies
         run: |
-          yum -y install centos-release-scl
-          yum -y install devtoolset-9
-          scl enable devtoolset-9 bash
           yum -y update
           yum -y install glibc glibc-common glibc-devel glibc-headers libstdc++ libstdc++-devel libx11-dev
           yum -y install gcc gcc-c++ make
@@ -38,10 +35,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.16'
+          go-version: '1.23.7'
 
       - name: Build
-        run: go build -v -o dist
+        run: go build -v ./...
 
       - name: Run tests
         run: go test -v ./...
@@ -64,5 +61,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./dist/kpasscli
-          asset_name: kpasscli-rhel7
+          asset_name: kpasscli-rhel8
           asset_content_type: application/octet-stream
