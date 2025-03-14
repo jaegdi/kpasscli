@@ -6,9 +6,9 @@ function test_kpasscli {
     local field=$3
 
     if [[ -z "$field" ]]; then
-        result=$(./kpasscli -i "$input")
+        result=$(./dist/kpasscli -c config.yaml -i "$input")
     else
-        result=$(./kpasscli -i "$input" -f "$field")
+        result=$(./dist/kpasscli -c config.yaml -i "$input" -f "$field")
     fi
 
     if [[ "$result" == "$expected_output" ]]; then
