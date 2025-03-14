@@ -15,8 +15,8 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          sudo yum -y update
-          sudo yum -y install glibc glibc-devel libstdc++ libstdc++-devel libx11-dev
+          yum -y update
+          yum -y install glibc glibc-devel libstdc++ libstdc++-devel libx11-dev
 
       - name: Checkout code
         uses: actions/checkout@v2
