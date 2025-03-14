@@ -1,0 +1,30 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags
+
+jobs:
+  build:
+    runs-on: rhel-7
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build
+        run: |
+          # Your build commands here
+          # Example:
+          # make build
+          go mod tidy
+          go build -v -o dist/kpasscli
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            # List your binary files here
+            # Example:
+            # dist/myapp
+            # dist/myapp.exe
+            dist/kpasscli
