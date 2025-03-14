@@ -15,8 +15,12 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
+          yum -y install centos-release-scl
+          yum -y install devtoolset-9
+          scl enable devtoolset-9 bash
           yum -y update
-          yum -y install glibc glibc-devel libstdc++ libstdc++-devel libx11-dev
+          yum -y install glibc glibc-common glibc-devel glibc-headers libstdc++ libstdc++-devel libx11-dev
+          yum -y install gcc gcc-c++ make
 
       - name: Checkout code
         uses: actions/checkout@v2
