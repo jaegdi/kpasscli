@@ -17,7 +17,7 @@ jobs:
         run: |
           dnf -y update
           dnf search libx11-devel
-          dnf -y install glibc glibc-common glibc-devel glibc-headers libstdc++ libstdc++-devel libx11-devel
+          dnf -y install glibc glibc-common glibc-devel glibc-headers libstdc++ libstdc++-devel libX11-devel
           dnf -y install gcc gcc-c++ make
 
       - name: Checkout code
