@@ -15,19 +15,29 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          repository: jaegdi/kpasscli
+          token: ${{ secrets.RELEASE_BUILD }}
+          ssh-strict: true
+          persist-credentials: true
+          clean: true
+          fetch-depth: 1
+          lfs: false
+          submodules: false
+          set-safe-directory: true
+
+      - name: Install dependencies
+        run: |
+          sudo yum -y update
+          sudo yum -y install glibc glibc-devel libstdc++ libstdc++-devel libx11-dev
 
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
           go-version: '1.16'
 
-      - name: Install dependencies
-        run: |
-          sudo yum update -y
-          sudo yum install -y libx11-dev
-
       - name: Build
-        run: go build -v -o dist ./...
+        run: go build -v -o dist
 
       - name: Run tests
         run: go test -v ./...
@@ -36,7 +46,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
@@ -46,7 +56,7 @@ jobs:
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./dist/kpasscli
