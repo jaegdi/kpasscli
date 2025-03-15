@@ -50,7 +50,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
-          tag_name: ${{ github.ref }}
+          tag_name: ${{ github.ref }}-ubi8
           release_name: Release ${{ github.ref }} ubi8
           draft: false
           prerelease: false
