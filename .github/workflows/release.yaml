@@ -108,3 +108,26 @@ jobs:
           asset_path: ./dist/kpasscli
           asset_name: kpasscli-rhel8
           asset_content_type: application/octet-stream
+
+  build-ubi7:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Build kpasscli binary in Docker
+      run: |
+        docker run --rm -v $(pwd):/src -w /src registry.access.redhat.com/ubi7/ubi:latest /bin/bash -c "
+        yum -y install go gcc glibc-static && \
+        go build -o kpasscli
+        "
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: kpasscli
+        path: ./kpasscli
