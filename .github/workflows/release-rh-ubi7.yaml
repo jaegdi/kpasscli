@@ -53,7 +53,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          release_name: Release ${{ github.ref }} ubi7
           draft: false
           prerelease: false
 
