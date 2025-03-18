@@ -22,7 +22,6 @@ RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
 ENV PATH="/usr/local/go/bin:${PATH}"
 
 # Set the working directory
-WORKDIR /apprking directory
 WORKDIR /app
 
 # Copy the source code into the container
@@ -36,8 +35,5 @@ ENV CGO_CFLAGS="-std=c99 -Wno-implicit-function-declaration" \
 RUN go mod tidy \
  && go build -v -o dist
 
-# Copy the built binary to the local directory
-CMD ["cp", "./kpasscli-ubi7", "./dist/kpasscli-ubi7"]
-
 # Set the entrypoint to the built binary
-ENTRYPOINT ["./kpasscli"]
+ENTRYPOINT ["/app/dist/kpasscli"]
