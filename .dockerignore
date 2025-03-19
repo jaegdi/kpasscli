@@ -1,0 +1,6 @@
+/.github
+/.vscode
+/archive
+/old-version
+/dist/kpasscli*
+/build
