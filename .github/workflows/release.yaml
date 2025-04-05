@@ -43,13 +43,13 @@ jobs:
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./dist/kpasscli
           asset_name: kpasscli
           asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
 
   build-ubi8:
     runs-on: ubuntu-latest
@@ -62,11 +62,10 @@ jobs:
         run: |
           dnf -y install yum-utils
           dnf -y install dnf-plugins-core
-          dnf -y config-manager --set-enabled codeready-builder-for-rhel-8-x86_64-rpms
+          dnf -y config-manager --set-enabled ubi-8-codeready-builder
           dnf -y update
           dnf -y install glibc glibc-common glibc-devel glibc-headers libstdc++ libstdc++-devel libX11-devel
           dnf -y install gcc gcc-c++ make rpm-build rpmdevtools
-          dnf -y install dpkg-dev dpkg-utils
 
       - name: Checkout code
         uses: actions/checkout@v2
