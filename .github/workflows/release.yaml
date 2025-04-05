@@ -43,13 +43,13 @@ jobs:
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./dist/kpasscli
           asset_name: kpasscli
           asset_content_type: application/octet-stream
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
 
   build-ubi8:
     runs-on: ubuntu-latest
@@ -60,13 +60,9 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          dnf -y install yum-utils
-          dnf -y install dnf-plugins-core
-          dnf -y config-manager --set-enabled ubi-8-codeready-builder
           dnf -y update
           dnf -y install glibc glibc-common glibc-devel glibc-headers libstdc++ libstdc++-devel libX11-devel
           dnf -y install gcc gcc-c++ make
-          # dnf -y install rpmdevtools
 
       - name: Checkout code
         uses: actions/checkout@v2
@@ -87,16 +83,10 @@ jobs:
           go-version: "1.23.7"
 
       - name: Build
-        run: go build -v -o dist/kpasscli
+        run: go build -v -o dist
 
       - name: Run tests
         run: go test -v ./...
-
-      - name: Create binary tarball
-        run: |
-          mkdir -p kpasscli-${{ github.ref }}
-          cp dist/kpasscli kpasscli-${{ github.ref }}/
-          tar czf kpasscli-${{ github.ref }}-linux-amd64.tar.gz kpasscli-${{ github.ref }}/
 
       - name: Create Release
         id: create_release
@@ -109,15 +99,15 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Binary Asset
+      - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./kpasscli-${{ github.ref }}-linux-amd64.tar.gz
-          asset_name: kpasscli-${{ github.ref }}-linux-amd64.tar.gz
-          asset_content_type: application/gzip
+          asset_path: ./dist/kpasscli
+          asset_name: kpasscli-rhel8
+          asset_content_type: application/octet-stream
 
   build-ubi7:
     runs-on: ubuntu-latest
