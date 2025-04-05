@@ -65,7 +65,8 @@ jobs:
           dnf -y config-manager --set-enabled ubi-8-codeready-builder
           dnf -y update
           dnf -y install glibc glibc-common glibc-devel glibc-headers libstdc++ libstdc++-devel libX11-devel
-          dnf -y install gcc gcc-c++ make rpm-build rpmdevtools
+          dnf -y install gcc gcc-c++ make
+          dnf -y install rpmdevtools
 
       - name: Checkout code
         uses: actions/checkout@v2
