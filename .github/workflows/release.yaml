@@ -60,6 +60,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
+          dnf -y install yum-utils
           dnf -y install dnf-plugins-core
           dnf -y config-manager --set-enabled codeready-builder-for-rhel-8-x86_64-rpms
           dnf -y update
