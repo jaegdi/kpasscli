@@ -11,7 +11,7 @@ import (
 	"syscall"
 
 	"github.com/tobischo/gokeepasslib/v3"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 // OpenDatabase opens and decodes a KeePass database file.
@@ -79,11 +79,12 @@ func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string) (s
 		return getPasswordFromPrompt()
 	}
 	// Resolve environment variables in passfile
-	passfile = os.ExpandEnv(passfile)
-	debug.Log(passfile)
+	// passfile = os.ExpandEnv(passfile)
+	debug.Log("PassFile: %v", passfile)
 
 	// Check if passfile is an executable in $PATH
 	if execPath, err := exec.LookPath(passfile); err == nil {
+		debug.Log("passfile: %v is an executable: %v", passfile, execPath)
 		passfile = execPath
 	}
 	info, err := os.Stat(passfile)
@@ -91,7 +92,7 @@ func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string) (s
 		debug.Log("passfile: %v Error: %v", passfile, err.Error())
 		return "", fmt.Errorf("password must be provided via file or executable")
 	}
-	debug.Log("%v", info)
+	debug.Log("%+v", info)
 
 	if info.Mode()&os.ModeNamedPipe != 0 {
 		// Read password from process substitution
@@ -142,7 +143,7 @@ func getPasswordFromPrompt() (string, error) {
 	// If no valid file or executable is found, prompt the user for the password
 	fmt.Print("Enter password: ")
 	var password string
-	passwordBytes, err := terminal.ReadPassword(int(syscall.Stdin))
+	passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 	}
 	password = strings.TrimSpace(string(passwordBytes))

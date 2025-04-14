@@ -3,53 +3,53 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*' # Trigger on version tags
+      - "v*.*.*" # Trigger on version tags
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Check out code
-      uses: actions/checkout@v2
+      - name: Check out code
+        uses: actions/checkout@v2
 
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '1.23.3'
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.23.3"
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libx11-dev
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev
 
-    - name: Build
-      run: |
-        go mod tidy
-        go build -v -o dist
+      - name: Build
+        run: |
+          go mod tidy
+          go build -v -o dist
 
-    - name: Run tests
-      run: go test -v ./...
+      - name: Run tests
+        run: go test -v ./...
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
 
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/kpasscli
-        asset_name: kpasscli
-        asset_content_type: application/octet-stream
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/kpasscli
+          asset_name: kpasscli
+          asset_content_type: application/octet-stream
 
   build-ubi8:
     runs-on: ubuntu-latest
@@ -80,7 +80,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.23.7'
+          go-version: "1.23.7"
 
       - name: Build
         run: go build -v -o dist
@@ -113,21 +113,125 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-    - name: Build kpasscli binary in Docker
-      run: |
-        docker run --rm -v $(pwd):/src -w /src registry.access.redhat.com/ubi7/ubi:latest /bin/bash -c "
-        yum -y install go gcc glibc-static && \
-        go build -o kpasscli
-        "
+      - name: Build kpasscli binary in Docker
+        run: |
+          docker run --rm -v $(pwd):/src -w /src registry.access.redhat.com/ubi7/ubi:latest /bin/bash -c "
+          yum -y install go gcc glibc-static && \
+          go build -o kpasscli
+          "
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: kpasscli
-        path: ./kpasscli
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: kpasscli
+          path: ./kpasscli
+
+  build-mac-m1:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.23.3"
+
+      - name: Build
+        run: go build -v -o dist/kpasscli-mac-m1
+
+      # - name: Run tests
+      #   run: go test -v ./...
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }} mac-m1
+          draft: false
+          prerelease: false
+
+      - name: Package Installation
+        run: |
+          mkdir -p dist/pkg
+          cat > dist/pkg/install.sh << 'EOL'
+          #!/bin/bash
+          sudo cp kpasscli-mac-m1 /usr/local/bin/kpasscli
+          sudo chmod +x /usr/local/bin/kpasscli
+          EOL
+          chmod +x dist/pkg/install.sh
+          cd dist && tar -czf kpasscli-mac-m1-installer.tar.gz pkg/install.sh kpasscli-mac-m1
+
+      - name: Create App Package
+        run: |
+          mkdir -p dist/KPassCLI.app/Contents/MacOS
+          mkdir -p dist/KPassCLI.app/Contents/Resources
+
+          # Create Info.plist
+          cat > dist/KPassCLI.app/Contents/Info.plist << 'EOL'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>kpasscli</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.kpasscli.app</string>
+              <key>CFBundleName</key>
+              <string>KPassCLI</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>11.0</string>
+          </dict>
+          </plist>
+          EOL
+
+          # Copy binary to app package
+          cp dist/kpasscli-mac-m1 dist/KPassCLI.app/Contents/MacOS/kpasscli
+          chmod +x dist/KPassCLI.app/Contents/MacOS/kpasscli
+
+          # Create DMG
+          hdiutil create -volname "KPassCLI" -srcfolder dist/KPassCLI.app -ov -format UDZO dist/kpasscli-mac-m1.dmg
+
+      - name: Upload DMG Package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/kpasscli-mac-m1.dmg
+          asset_name: kpasscli-mac-m1.dmg
+          asset_content_type: application/x-apple-diskimage
+
+      - name: Upload Installer Package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/kpasscli-mac-m1-installer.tar.gz
+          asset_name: kpasscli-mac-m1-installer.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/kpasscli-mac-m1
+          asset_name: kpasscli-mac-m1
+          asset_content_type: application/octet-stream

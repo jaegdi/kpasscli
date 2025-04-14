@@ -29,14 +29,17 @@ func main() {
 	cfg, err := config.Load(flags.ConfigPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: Could not load config file: %v\n", err)
+	} else {
+		debug.Log("Loaded config file: %v", cfg)
 	}
 
 	// Resolve database path
 	dbPath := keepass.ResolveDatabasePath(flags.KdbPath, cfg)
-	debug.Log("Resolved database path: %s", dbPath) // Debug-Log hinzugefügt
 	if dbPath == "" {
 		fmt.Fprintf(os.Stderr, "Error: No KeePass database path provided")
 		os.Exit(1)
+	} else {
+		debug.Log("Resolved database path: %s", dbPath) // Debug-Log hinzugefügt
 	}
 
 	// Get database password
@@ -66,6 +69,10 @@ func main() {
 		return
 
 	} else {
+
+		// Get output handler
+		outputType := output.ResolveOutputType(flags.Out, cfg)
+		handler := output.NewHandler(outputType)
 
 		// Create finder with search options
 		finder := search.NewFinder(db)
@@ -109,32 +116,4 @@ func main() {
 		}
 		return
 	}
-}
-
-// resolveOutputType determines the output type based on the provided flag,
-// environment variable, or configuration. It follows this order of precedence:
-// 1. If the flagOut parameter is not empty, it returns the corresponding output type.
-// 2. If the environment variable "KPASSCLI_OUT" is set and valid, it returns the corresponding output type.
-// 3. If the cfg parameter is not nil and cfg.DefaultOutput is not empty, it returns the corresponding output type.
-// 4. If none of the above conditions are met, it defaults to output.Stdout.
-//
-// Parameters:
-// - flagOut: A string representing the output type specified by a flag.
-// - cfg: A pointer to a config.Config struct that may contain a default output type.
-//
-// Returns:
-// - output.Type: The resolved output type based on the provided inputs.
-func resolveOutputType(flagOut string, cfg *config.Config) output.Type {
-	if flagOut != "" {
-		return output.Type(flagOut)
-	}
-	if kpcliout := os.Getenv("KPASSCLI_OUT"); kpcliout != "" {
-		if output.IsValidType(kpcliout) {
-			return output.Type(kpcliout)
-		}
-	}
-	if cfg != nil && cfg.DefaultOutput != "" {
-		return output.Type(cfg.DefaultOutput)
-	}
-	return output.Stdout
 }

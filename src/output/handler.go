@@ -5,33 +5,39 @@ import (
 	"fmt"
 	"kpasscli/src/config"
 	"kpasscli/src/debug"
+	"os"
 
 	// Hinzugefügt für Debug-Logs
 	"github.com/tobischo/gokeepasslib/v3"
 	"golang.design/x/clipboard"
 )
 
-type Type string
+type OutputChannel string
 
 const (
+<<<<<<< HEAD
 	Clipboard  Type = "clipboard"
 	Stdout     Type = "stdout"
 	lineBreak       = "----------------------------------------"
 	timeFormat      = "2006-01-02 15:04:05"
+=======
+	Clipboard OutputChannel = "clipboard"
+	Stdout    OutputChannel = "stdout"
+>>>>>>> 4ccacddf26c1e693a0e842ce56a12a5597f9f1cd
 )
 
 type Handler struct {
-	outputType Type
+	outputChannel OutputChannel
 }
 
 // NewHandler creates a new Handler instance with the specified output type.
 // Parameters:
-//   - outputType: The type of output (clipboard or stdout).
+//   - outputChannel: The type of output (clipboard or stdout).
 //
 // Returns:
 //   - *Handler: A new Handler instance.
-func NewHandler(outputType Type) *Handler {
-	return &Handler{outputType: outputType}
+func NewHandler(outputChannel OutputChannel) *Handler {
+	return &Handler{outputChannel: outputChannel}
 }
 
 // Output outputs the given value based on the handler's output type.
@@ -42,13 +48,13 @@ func NewHandler(outputType Type) *Handler {
 //   - error: Any error encountered during output.
 func (h *Handler) Output(value string) error {
 	debug.Log("Outputting value: %s", value) // Debug-Log hinzugefügt
-	switch h.outputType {
+	switch h.outputChannel {
 	case Clipboard:
 		return h.toClipboard(value)
 	case Stdout:
 		return h.toStdout(value)
 	default:
-		return fmt.Errorf("unknown output type: %s", h.outputType)
+		return fmt.Errorf("unknown output type: %s", h.outputChannel)
 	}
 }
 
@@ -81,12 +87,12 @@ func (h *Handler) toStdout(value string) error {
 
 // IsValidType checks if the provided output type is valid.
 // Parameters:
-//   - outputType: The output type to check.
+//   - outputChannel: The output type to check.
 //
 // Returns:
 //   - bool: True if the output type is valid, false otherwise.
-func IsValidType(outputType string) bool {
-	switch Type(outputType) {
+func IsValidType(outputChannel string) bool {
+	switch OutputChannel(outputChannel) {
 	case Clipboard, Stdout:
 		return true
 	default:
@@ -205,4 +211,31 @@ func showAllFieldsJson(entry *gokeepasslib.Entry) {
 	}
 
 	fmt.Println(string(jsonData))
+}
+// resolveOutputType determines the output type based on the provided flag,
+// environment variable, or configuration. It follows this order of precedence:
+// 1. If the flagOut parameter is not empty, it returns the corresponding output type.
+// 2. If the environment variable "KPASSCLI_OUT" is set and valid, it returns the corresponding output type.
+// 3. If the cfg parameter is not nil and cfg.DefaultOutput is not empty, it returns the corresponding output type.
+// 4. If none of the above conditions are met, it defaults to output.Stdout.
+//
+// Parameters:
+// - flagOut: A string representing the output type specified by a flag.
+// - cfg: A pointer to a config.Config struct that may contain a default output type.
+//
+// Returns:
+// - output.OutputChannel: The resolved output type based on the provided inputs.
+func ResolveOutputType(flagOut string, cfg *config.Config) OutputChannel {
+	if flagOut != "" {
+		return OutputChannel(flagOut)
+	}
+	if kpcliout := os.Getenv("KPASSCLI_OUT"); kpcliout != "" {
+		if IsValidType(kpcliout) {
+			return OutputChannel(kpcliout)
+		}
+	}
+	if cfg != nil && cfg.DefaultOutput != "" {
+		return OutputChannel(cfg.DefaultOutput)
+	}
+	return Stdout
 }
