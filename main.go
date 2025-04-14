@@ -57,45 +57,57 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Create finder with search options
-	finder := search.NewFinder(db)
-	finder.Options = search.SearchOptions{
-		CaseSensitive: flags.CaseSensitive,
-		ExactMatch:    flags.ExactMatch,
-	}
-	results, err := finder.Find(flags.Item)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error searching for item: %v\n", err)
-		os.Exit(1)
-	}
+	if flags.ShowAll {
 
-	if len(results) == 0 {
-		fmt.Fprintf(os.Stderr, "No items found")
-		os.Exit(1)
-	}
-
-	if len(results) > 1 {
-		fmt.Fprintf(os.Stderr, "Multiple items found:")
-		for _, result := range results {
-			fmt.Fprintf(os.Stderr, "- %s\n", result.Path)
+		err = keepass.GetAllFields(db, flags.Item)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting all fields: %v\n", err)
 		}
-		os.Exit(1)
-	}
+		return
 
-	// Get output handler
-	outputType := resolveOutputType(flags.Out, cfg)
-	handler := output.NewHandler(outputType)
+	} else {
 
-	// Get and output field value
-	value, err := results[0].GetField(flags.FieldName)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting field: %v\n", err)
-		os.Exit(1)
-	}
+		// Create finder with search options
+		finder := search.NewFinder(db)
+		finder.Options = search.SearchOptions{
+			CaseSensitive: flags.CaseSensitive,
+			ExactMatch:    flags.ExactMatch,
+		}
+		results, err := finder.Find(flags.Item)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error searching for item: %v\n", err)
+			os.Exit(1)
+		}
 
-	if err := handler.Output(value); err != nil {
-		fmt.Fprintf(os.Stderr, "Error outputting value: %v\n", err)
-		os.Exit(1)
+		if len(results) == 0 {
+			fmt.Fprintf(os.Stderr, "No items found")
+			os.Exit(1)
+		}
+
+		if len(results) > 1 {
+			fmt.Fprintf(os.Stderr, "Multiple items found:")
+			for _, result := range results {
+				fmt.Fprintf(os.Stderr, "- %s\n", result.Path)
+			}
+			os.Exit(1)
+		}
+
+		// Get output handler
+		outputType := resolveOutputType(flags.Out, cfg)
+		handler := output.NewHandler(outputType)
+
+		// Get and output field value
+		value, err := results[0].GetField(flags.FieldName)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting field: %v\n", err)
+			os.Exit(1)
+		}
+
+		if err := handler.Output(value); err != nil {
+			fmt.Fprintf(os.Stderr, "Error outputting value: %v\n", err)
+			os.Exit(1)
+		}
+		return
 	}
 }
 

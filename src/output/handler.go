@@ -1,18 +1,23 @@
 package output
 
 import (
+	"encoding/json"
 	"fmt"
+	"kpasscli/src/config"
 	"kpasscli/src/debug"
 
 	// Hinzugefügt für Debug-Logs
+	"github.com/tobischo/gokeepasslib/v3"
 	"golang.design/x/clipboard"
 )
 
 type Type string
 
 const (
-	Clipboard Type = "clipboard"
-	Stdout    Type = "stdout"
+	Clipboard  Type = "clipboard"
+	Stdout     Type = "stdout"
+	lineBreak       = "----------------------------------------"
+	timeFormat      = "2006-01-02 15:04:05"
 )
 
 type Handler struct {
@@ -87,4 +92,117 @@ func IsValidType(outputType string) bool {
 	default:
 		return false
 	}
+}
+
+// ShowAllFields displays all fields of a KeePass entry
+func ShowAllFields(entry *gokeepasslib.Entry) {
+	if entry == nil {
+		return
+	}
+
+	if config.Config.OutputFormat == "json" {
+		showAllFieldsJson(entry)
+		return
+	}
+
+	fmt.Println(lineBreak)
+	fmt.Printf("Entry Details:\n")
+	fmt.Println(lineBreak)
+
+	// Standard fields
+	printNonEmptyValue("Title", getValue(entry, "Title"))
+	printNonEmptyValue("Username", getValue(entry, "UserName"))
+	printNonEmptyValue("URL", getValue(entry, "URL"))
+	printNonEmptyValue("Notes", getValue(entry, "Notes"))
+
+	// Additional fields
+	hasAdditionalFields := false
+	for _, v := range entry.Values {
+		if isAdditionalField(v.Key) && v.Value.Content != "" {
+			if !hasAdditionalFields {
+				fmt.Println(lineBreak)
+				fmt.Println("Additional Fields:")
+				hasAdditionalFields = true
+			}
+			printNonEmptyValue(v.Key, v.Value.Content)
+		}
+	}
+
+	// Metadata
+	fmt.Println(lineBreak)
+	fmt.Println("Metadata:")
+	printNonEmptyValue("Created", entry.Times.CreationTime.Format(timeFormat))
+	printNonEmptyValue("Modified", entry.Times.LastModificationTime.Format(timeFormat))
+	printNonEmptyValue("Accessed", entry.Times.LastAccessTime.Format(timeFormat))
+	fmt.Println(lineBreak)
+}
+
+// Helper functions
+func getValue(entry *gokeepasslib.Entry, key string) string {
+	for _, v := range entry.Values {
+		if v.Key == key {
+			return v.Value.Content
+		}
+	}
+	return ""
+}
+
+func printNonEmptyValue(key, value string) {
+	if value != "" {
+		fmt.Printf("%s: %s\n", key, value)
+	}
+}
+
+func isAdditionalField(key string) bool {
+	standardFields := map[string]bool{
+		"Title":    true,
+		"UserName": true,
+		"URL":      true,
+		"Notes":    true,
+		"Password": true,
+	}
+	return !standardFields[key]
+}
+
+func showAllFieldsJson(entry *gokeepasslib.Entry) {
+	type entryData struct {
+		Title            string            `json:"title"`
+		Username         string            `json:"username"`
+		URL              string            `json:"url"`
+		Notes            string            `json:"notes"`
+		AdditionalFields map[string]string `json:"additional_fields,omitempty"`
+		Metadata         struct {
+			Created  string `json:"created"`
+			Modified string `json:"modified"`
+			Accessed string `json:"accessed"`
+		} `json:"metadata"`
+	}
+
+	data := entryData{
+		Title:            getValue(entry, "Title"),
+		Username:         getValue(entry, "UserName"),
+		URL:              getValue(entry, "URL"),
+		Notes:            getValue(entry, "Notes"),
+		AdditionalFields: make(map[string]string),
+	}
+
+	// Fill additional fields
+	for _, v := range entry.Values {
+		if isAdditionalField(v.Key) && v.Value.Content != "" {
+			data.AdditionalFields[v.Key] = v.Value.Content
+		}
+	}
+
+	// Fill metadata
+	data.Metadata.Created = entry.Times.CreationTime.Format(timeFormat)
+	data.Metadata.Modified = entry.Times.LastModificationTime.Format(timeFormat)
+	data.Metadata.Accessed = entry.Times.LastAccessTime.Format(timeFormat)
+
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		logger.Error.Printf("Error creating JSON output: %v", err)
+		return
+	}
+
+	fmt.Println(string(jsonData))
 }

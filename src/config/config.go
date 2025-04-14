@@ -18,6 +18,7 @@ type Config struct {
 	PasswordFile       string `yaml:"password_file"`
 	PasswordExecutable string `yaml:"password_executable"`
 	ConfigfilePath     string `yaml:"configfile_path"`
+	OutputFormat       string `yaml:"output_format"`
 }
 
 // Load reads and parses the configuration file.

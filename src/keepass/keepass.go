@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"kpasscli/src/config"
 	"kpasscli/src/debug"
+	"kpasscli/src/output"
 	"os"
 	"os/exec"
 	"strings"
@@ -177,4 +178,18 @@ func ResolveDatabasePath(flagPath string, cfg *config.Config) string {
 		return cfg.DatabasePath
 	}
 	return ""
+}
+
+func GetAllFields(db *gokeepasslib.Database, itemPath string) error {
+	entry, err := search.FindEntry(db, itemPath)
+	if err != nil {
+		return err
+	}
+
+	if entry == nil {
+		return fmt.Errorf("entry not found: %s", itemPath)
+	}
+
+	output.ShowAllFields(entry)
+	return nil
 }

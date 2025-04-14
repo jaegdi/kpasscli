@@ -35,6 +35,7 @@ type Flags struct {
 	VerifyFlag    bool
 	CreateConfig  bool
 	PrintConfig   bool
+	ShowAll       bool
 }
 
 func ParseFlags() *Flags {
@@ -55,6 +56,9 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(&flags.Out, "out", "", "Output type (clipboard/stdout)")
 	flag.StringVar(&flags.Out, "o", "", "Output type (clipboard/stdout) (shorthand)")
+
+	flag.BoolVar(&flags.ShowAll, "show-all", false, "Show all entries of an item.")
+	flag.BoolVar(&flags.ShowAll, "a", false, "Show all entries of an item. (shorthand)")
 
 	flag.BoolVar(&flags.CaseSensitive, "case-sensitive", false, "Enable case-sensitive search")
 	flag.BoolVar(&flags.CaseSensitive, "cs", false, "Enable case-sensitive search (shorthand)")
