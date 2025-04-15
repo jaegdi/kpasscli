@@ -48,6 +48,9 @@ func ParseFlags() *Flags {
 	flag.StringVar(&flags.KdbPassword, "kdbpassword", "", "Password file or executable to get password")
 	flag.StringVar(&flags.KdbPassword, "w", "", "Password file or executable to get password (shorthand)")
 
+	flag.StringVar(&flags.ConfigPath, "config", "~/.config/kpasscli/config.yaml", "Path to configuration file")
+	flag.StringVar(&flags.ConfigPath, "c", "~/.config/kpasscli/config.yaml", "Path to configuration file (shorthand)")
+
 	flag.StringVar(&flags.Item, "item", "", "Item to search for")
 	flag.StringVar(&flags.Item, "i", "", "Item to search for (shorthand)")
 
@@ -83,9 +86,6 @@ func ParseFlags() *Flags {
 
 	flag.BoolVar(&flags.PrintConfig, "print-config", false, "Print current configuration")
 	flag.BoolVar(&flags.PrintConfig, "pc", false, "Print current configuration (shorthand)")
-
-	flag.StringVar(&flags.ConfigPath, "config", "~/.config/kpasscli/config.yaml", "Path to configuration file")
-	flag.StringVar(&flags.ConfigPath, "c", "~/.config/kpasscli/config.yaml", "Path to configuration file (shorthand)")
 
 	flag.Usage = doc.ShowHelp
 	flag.Parse()

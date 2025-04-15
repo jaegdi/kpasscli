@@ -18,13 +18,6 @@ type Result struct {
 	Entry *gokeepasslib.Entry
 }
 
-var verify bool
-
-// Enable sets the debug logging flag to true.
-func EnableVerify() {
-	verify = true
-}
-
 // GetField returns the value of the specified field from the entry
 func (r *Result) GetField(fieldName string) (string, error) {
 	for _, v := range r.Entry.Values {
@@ -33,6 +26,13 @@ func (r *Result) GetField(fieldName string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("field '%s' not found", fieldName)
+}
+
+var verify bool
+
+// Enable sets the debug logging flag to true.
+func EnableVerify() {
+	verify = true
 }
 
 // SearchOptions defines the search behavior

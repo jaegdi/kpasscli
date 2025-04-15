@@ -6,6 +6,7 @@ import (
 	"kpasscli/src/config"
 	"kpasscli/src/debug"
 	"os"
+	"time"
 
 	// Hinzugefügt für Debug-Logs
 	"github.com/tobischo/gokeepasslib/v3"
@@ -15,15 +16,10 @@ import (
 type OutputChannel string
 
 const (
-<<<<<<< HEAD
-	Clipboard  Type = "clipboard"
-	Stdout     Type = "stdout"
-	lineBreak       = "----------------------------------------"
-	timeFormat      = "2006-01-02 15:04:05"
-=======
-	Clipboard OutputChannel = "clipboard"
-	Stdout    OutputChannel = "stdout"
->>>>>>> 4ccacddf26c1e693a0e842ce56a12a5597f9f1cd
+	Clipboard  OutputChannel = "clipboard"
+	Stdout     OutputChannel = "stdout"
+	lineBreak                = "----------------------------------------"
+	timeFormat               = "2006-01-02 15:04:05"
 )
 
 type Handler struct {
@@ -101,12 +97,12 @@ func IsValidType(outputChannel string) bool {
 }
 
 // ShowAllFields displays all fields of a KeePass entry
-func ShowAllFields(entry *gokeepasslib.Entry) {
+func ShowAllFields(entry *gokeepasslib.Entry, config config.Config) {
 	if entry == nil {
 		return
 	}
 
-	if config.Config.OutputFormat == "json" {
+	if config.OutputFormat == "json" {
 		showAllFieldsJson(entry)
 		return
 	}
@@ -137,9 +133,9 @@ func ShowAllFields(entry *gokeepasslib.Entry) {
 	// Metadata
 	fmt.Println(lineBreak)
 	fmt.Println("Metadata:")
-	printNonEmptyValue("Created", entry.Times.CreationTime.Format(timeFormat))
-	printNonEmptyValue("Modified", entry.Times.LastModificationTime.Format(timeFormat))
-	printNonEmptyValue("Accessed", entry.Times.LastAccessTime.Format(timeFormat))
+	printNonEmptyValue("Created", formatTime(entry.Times.CreationTime.Time))
+	printNonEmptyValue("Modified", formatTime(entry.Times.LastModificationTime.Time))
+	printNonEmptyValue("Accessed", formatTime(entry.Times.LastAccessTime.Time))
 	fmt.Println(lineBreak)
 }
 
@@ -157,6 +153,10 @@ func printNonEmptyValue(key, value string) {
 	if value != "" {
 		fmt.Printf("%s: %s\n", key, value)
 	}
+}
+
+func formatTime(t time.Time) string {
+	return t.Format(timeFormat)
 }
 
 func isAdditionalField(key string) bool {
@@ -200,18 +200,19 @@ func showAllFieldsJson(entry *gokeepasslib.Entry) {
 	}
 
 	// Fill metadata
-	data.Metadata.Created = entry.Times.CreationTime.Format(timeFormat)
-	data.Metadata.Modified = entry.Times.LastModificationTime.Format(timeFormat)
-	data.Metadata.Accessed = entry.Times.LastAccessTime.Format(timeFormat)
+	data.Metadata.Created = formatTime(entry.Times.CreationTime.Time)
+	data.Metadata.Modified = formatTime(entry.Times.LastModificationTime.Time)
+	data.Metadata.Accessed = formatTime(entry.Times.LastAccessTime.Time)
 
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
-		logger.Error.Printf("Error creating JSON output: %v", err)
+		fmt.Printf("Error creating JSON output: %v\n", err)
 		return
 	}
 
 	fmt.Println(string(jsonData))
 }
+
 // resolveOutputType determines the output type based on the provided flag,
 // environment variable, or configuration. It follows this order of precedence:
 // 1. If the flagOut parameter is not empty, it returns the corresponding output type.

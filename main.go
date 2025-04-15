@@ -62,7 +62,7 @@ func main() {
 
 	if flags.ShowAll {
 
-		err = keepass.GetAllFields(db, flags.Item)
+		err = keepass.GetAllFields(db, cfg, flags.Item)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting all fields: %v\n", err)
 		}
@@ -98,10 +98,6 @@ func main() {
 			}
 			os.Exit(1)
 		}
-
-		// Get output handler
-		outputType := resolveOutputType(flags.Out, cfg)
-		handler := output.NewHandler(outputType)
 
 		// Get and output field value
 		value, err := results[0].GetField(flags.FieldName)

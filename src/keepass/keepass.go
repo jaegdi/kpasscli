@@ -5,6 +5,7 @@ import (
 	"kpasscli/src/config"
 	"kpasscli/src/debug"
 	"kpasscli/src/output"
+	"kpasscli/src/search"
 	"os"
 	"os/exec"
 	"strings"
@@ -181,16 +182,41 @@ func ResolveDatabasePath(flagPath string, cfg *config.Config) string {
 	return ""
 }
 
-func GetAllFields(db *gokeepasslib.Database, itemPath string) error {
-	entry, err := search.FindEntry(db, itemPath)
+// GetAllFields finds a specific entry by path and displays all its fields.
+func GetAllFields(db *gokeepasslib.Database, config *config.Config, itemPath string) error {
+	finder := search.NewFinder(db)
+	// Rename the variable to 'results' to better reflect its type ([]search.Result)
+	results, err := finder.Find(itemPath)
 	if err != nil {
-		return err
+		// Wrap the error for better context
+		return fmt.Errorf("error finding entry '%s': %w", itemPath, err)
 	}
 
-	if entry == nil {
+	// Handle cases based on the number of results found
+	if len(results) == 0 {
 		return fmt.Errorf("entry not found: %s", itemPath)
 	}
 
-	output.ShowAllFields(entry)
+	if len(results) > 1 {
+		// More than one entry found, which is ambiguous for showing all fields.
+		// You might want to list the paths found instead.
+		var foundPaths []string
+		for _, res := range results {
+			foundPaths = append(foundPaths, res.Path)
+		}
+		return fmt.Errorf("multiple entries found for '%s', please specify a unique path: %s", itemPath, strings.Join(foundPaths, ", "))
+	}
+
+	// Exactly one result found. Access the Entry field from the first element.
+	// The 'Entry' field within search.Result is the *gokeepasslib.Entry we need.
+	singleEntry := results[0].Entry
+
+	// It's good practice to check if the Entry pointer is nil, although Find should ideally populate it.
+	if singleEntry == nil {
+		return fmt.Errorf("found result for '%s', but entry data is unexpectedly nil", itemPath)
+	}
+
+	// Now pass the correct type (*gokeepasslib.Entry) to ShowAllFields
+	output.ShowAllFields(singleEntry, *config)
 	return nil
 }

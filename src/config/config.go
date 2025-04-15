@@ -60,6 +60,7 @@ func Load(configPath string) (*Config, error) {
 	// config.ConfigfilePath = configPath
 	y, _ := yaml.Marshal(config)
 	debug.Log("Loaded config: %v\n", string(y))
+	config.OutputFormat = "text"
 	return &config, nil
 }
 
