@@ -36,7 +36,9 @@ type Flags struct {
 	CreateConfig  bool
 	PrintConfig   bool
 	ShowAll       bool
-}
+	// --- NEU ---
+	ClearAfter   int // Sekunden bis zum Löschen des Clipboards (0 = deaktiviert)
+}}
 
 func ParseFlags() *Flags {
 	flags := &Flags{}
@@ -59,6 +61,10 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(&flags.Out, "out", "", "Output type (clipboard/stdout)")
 	flag.StringVar(&flags.Out, "o", "", "Output type (clipboard/stdout) (shorthand)")
+
+	// --- NEU ---
+	flag.IntVar(&flags.ClearAfter, "clear-after", 0, "Clear clipboard after N seconds (0=disable, only active if output is clipboard)")
+	flag.IntVar(&flags.ClearAfter, "ca", 0, "Clear clipboard after N seconds (0=disable, only active if output is clipboard) (shorthand)")
 
 	flag.BoolVar(&flags.ShowAll, "show-all", false, "Show all entries of an item.")
 	flag.BoolVar(&flags.ShowAll, "a", false, "Show all entries of an item. (shorthand)")
