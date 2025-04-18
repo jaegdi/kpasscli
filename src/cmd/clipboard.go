@@ -146,9 +146,9 @@ func StartClipboardClearer(delaySeconds int) {
 		"--internal-clear-delay", strconv.Itoa(delaySeconds), // Das Delay übergeben
 	}
 	// Optional: Debug-Flag weitergeben
-	// if debug.IsEnabled() {
-	//     args = append(args, "--debug") // oder "-d"
-	// }
+	if debug.Enabled() {
+		args = append(args, "--debug") // oder "-d"
+	}
 
 	// 3. Erstelle das exec.Cmd Objekt
 	cmd := exec.Command(executablePath, args...)

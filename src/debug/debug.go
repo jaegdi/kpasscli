@@ -16,6 +16,10 @@ func Enable() {
 	enabled = true
 }
 
+func Enabled() bool {
+	return enabled
+}
+
 // Log logs a debug message if debug logging is enabled.
 // It includes the name of the calling function and the line number in the log message.
 // Parameters:
