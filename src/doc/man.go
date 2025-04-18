@@ -8,7 +8,7 @@ const manPage = `NAME
     kpasscli - KeePass database command line interface
 
 SYNOPSIS
-    kpasscli [-kdbpath|-p path] [-kdbpassword|-w path] -item|-i name [-fieldname|-f field] [-out|-o type] [-verify|-v] [-man|-m] [-help|-h]
+    kpasscli [-kdbpath|-p path] [-kdbpassword|-w path] [-config|-c] -item|-i name [-fieldname|-f field] [-out|-o type] [-verify|-v] [-man|-m] [-help|-h]
 
 DESCRIPTION
     kpasscli is a command-line tool for querying KeePass database files.
@@ -37,6 +37,11 @@ OPTIONS
         outputs the password. For security reasons, the password cannot be provided
         directly on the command line.
 
+    -config|-c config-file
+        Path to a file containing the configuration settings. If not specified,
+        the tool will look for the path in the KDBCONFIG environment variable
+        or the default config file.
+
     -item|-i name
         The entry to search for. This can be:
         - An absolute path starting with "/" (e.g., "/Personal/Banking/Account")
@@ -52,7 +57,10 @@ OPTIONS
         - stdout: Print to standard output (default)
         - clipboard: Copy to system clipboard
 
-    -case-sensitive|-c
+    -clear-after | -ca
+        Clear clipboard after N seconds (0=disable, only active if output is clipboard)
+
+    -case-sensitive|-cs
         Enable case-sensitive search
 
     -exact-match|-e

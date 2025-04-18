@@ -10,10 +10,13 @@ func ShowHelp() {
 Options:
     -kdbpath | -p path      Path to KeePass database file
     -kdbpassword | -w path  Path to password file or executable, if not given asks for password interactively
+    -config | -c            Path to config file
     -item | -i name         Entry to search for
+    -all | -a               Show all entries of the specified item
     -fieldname | -f field   Field to retrieve (default: Password)
     -out | -o type          Output type (stdout/clipboard)
-    -case-sensitive | -c    Enable case-sensitive search
+    -clear-after | -ca      Clear clipboard after N seconds (0=disable, only active if output is clipboard)
+    -case-sensitive | -cs   Enable case-sensitive search
     -exact-match | -e       Enable exact match search
     -create-config | -cc    Create an example config file
     -verify | -v            Show the path of found item
@@ -40,7 +43,10 @@ Example:
     # for username
     kasscli -i=/Personal/Banking/Account -f=UserName
 
-For more information, use -man|-m
+    # to show all entries of the specified item
+    kasscli -i=/Personal/Banking/Account -a
+
+For more information, use -man | -m
 
 AUTHOR
 	Dirk Jäger
