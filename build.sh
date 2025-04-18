@@ -2,7 +2,7 @@
 
 # echo Generate the config-clusters.go
 # build/scripts/generate_config.sh
-go="go.exe"
+go="go"
 
 echo
 echo "Build linux binary of kpasscli"

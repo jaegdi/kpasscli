@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"kpasscli/src/cmd"
 	"kpasscli/src/config"
 	"kpasscli/src/debug"
 	"kpasscli/src/keepass"
@@ -86,30 +87,36 @@ func main() {
 			os.Exit(1)
 		}
 
-		if len(results) == 0 {
-			fmt.Fprintf(os.Stderr, "No items found")
-			os.Exit(1)
-		}
+		if len(results) == 1 { // Nur bei genau einem Ergebnis fortfahren
+			value, err := results[0].GetField(flags.FieldName)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error getting field: %v\n", err)
+				os.Exit(1)
+			}
 
-		if len(results) > 1 {
-			fmt.Fprintf(os.Stderr, "Multiple items found:")
+			// Output the value using the handler
+			if err := handler.Output(value); err != nil {
+				fmt.Fprintf(os.Stderr, "Error outputting value: %v\n", err)
+				os.Exit(1)
+			}
+
+			// --- CLIPBOARD CLEARER STARTEN (jetzt als neuer Prozess) ---
+			if flags.ClearAfter > 0 && outputType == output.Clipboard {
+				fmt.Fprintf(os.Stderr, "Value copied to clipboard. Starting background process to clear in %d seconds.\n", flags.ClearAfter)
+				cmd.StartClipboardClearer(flags.ClearAfter) // Ruft die *neue* Funktion auf
+			}
+			// --- ENDE ---
+
+			os.Exit(0) // Hauptprozess erfolgreich beendet
+		} else if len(results) == 0 {
+			fmt.Fprintf(os.Stderr, "No items found\n") // Konsistente Fehlermeldung
+			os.Exit(1)
+		} else { // Mehr als 1 Ergebnis
+			fmt.Fprintf(os.Stderr, "Multiple items found:\n") // Konsistente Fehlermeldung
 			for _, result := range results {
 				fmt.Fprintf(os.Stderr, "- %s\n", result.Path)
 			}
 			os.Exit(1)
 		}
-
-		// Get and output field value
-		value, err := results[0].GetField(flags.FieldName)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting field: %v\n", err)
-			os.Exit(1)
-		}
-
-		if err := handler.Output(value); err != nil {
-			fmt.Fprintf(os.Stderr, "Error outputting value: %v\n", err)
-			os.Exit(1)
-		}
-		return
 	}
 }

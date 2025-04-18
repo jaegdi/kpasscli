@@ -14,6 +14,8 @@ DESCRIPTION
     kpasscli is a command-line tool for querying KeePass database files.
     It allows retrieving entries and their fields using various search methods.
 
+    kpasscli is designed, to work in linux, Mac and Windows systems.
+
     The intention for this tool is to use it in automation scripts, to get secret strings like
     cert keys, key passwords, user or tech. user passwords, tokens, ..., which are stored in a keepass-db.
     And it supports optional to open the keepass-db without an interactive password prompt.
@@ -26,6 +28,7 @@ DESCRIPTION
     Then it depends of the output config, if this is set to
     - stdout: The value is printed to stdout
     - clipboard: The value is copied into the clipboard and can be pasted wherever it is needed
+      with tho parameter -ca nn  (or -clear-after nn)  the clipboard ist automatically cleared after nn seconds
 
 OPTIONS
     -kdbpath|-p path
@@ -57,8 +60,8 @@ OPTIONS
         - stdout: Print to standard output (default)
         - clipboard: Copy to system clipboard
 
-    -clear-after | -ca
-        Clear clipboard after N seconds (0=disable, only active if output is clipboard)
+    -clear-after nn | -ca nn
+        Clear clipboard after nn seconds (default is 20 sec., 0=disable, only active if output is clipboard)
 
     -case-sensitive|-cs
         Enable case-sensitive search
@@ -108,6 +111,17 @@ ENVIRONMENT
     KPASSCLI_KDBPATH       Alternative way to specify the KeePass database path
     KPASSCLI_OUT           Alternative way to specify the output type (stdout/clipboard)
     KPASSCLI_kdbpassword   Alternative way to specify the password file or executable
+
+    define an alias like
+
+        kpcl="kpasscli -ca 20 -o clipboard -i"
+    
+    in your shell-rc file.
+    Then you can call 
+    
+        kpcl account  
+    
+    to get the password of account into the clipboard for 20 seconds. then the clipboard is cleared.
 
 SECURITY
     To enable noninteractive access to open the keepass-db, there are two options:

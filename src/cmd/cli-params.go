@@ -27,6 +27,7 @@ type Flags struct {
 	FieldName     string
 	Out           string
 	ConfigPath    string
+	ClearAfter    int
 	CaseSensitive bool
 	ExactMatch    bool
 	ShowMan       bool
@@ -40,6 +41,12 @@ type Flags struct {
 
 func ParseFlags() *Flags {
 	flags := &Flags{}
+
+	// --- INTERNE FLAGS (nicht in der Hilfe anzeigen) ---
+	// Diese werden nur verwendet, wenn kpasscli sich selbst aufruft, um das Clipboard zu löschen.
+	var internalClearClipboard = flag.Bool("internal-clear-clipboard", false, "Internal flag to run in clipboard clear mode")
+	var internalClearDelay = flag.Int("internal-clear-delay", 0, "Internal flag for clipboard clear delay")
+	// ----------------------------------------------------
 
 	// Define flags with both long and short versions
 	flag.StringVar(&flags.KdbPath, "kdbpath", "", "Path to KeePass database file")
@@ -59,6 +66,10 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(&flags.Out, "out", "", "Output type (clipboard/stdout)")
 	flag.StringVar(&flags.Out, "o", "", "Output type (clipboard/stdout) (shorthand)")
+
+	// --- NEU ---
+	flag.IntVar(&flags.ClearAfter, "clear-after", 20, "Clear clipboard after N seconds (0=disable, only active if output is clipboard)")
+	flag.IntVar(&flags.ClearAfter, "ca", 20, "Clear clipboard after N seconds (0=disable, only active if output is clipboard) (shorthand)")
 
 	flag.BoolVar(&flags.ShowAll, "show-all", false, "Show all entries of an item.")
 	flag.BoolVar(&flags.ShowAll, "a", false, "Show all entries of an item. (shorthand)")
@@ -89,6 +100,16 @@ func ParseFlags() *Flags {
 
 	flag.Usage = doc.ShowHelp
 	flag.Parse()
+
+	// --- Prüfen, ob wir im internen Clearer-Modus sind ---
+	// WICHTIG: Diese Prüfung muss *nach* flag.Parse() erfolgen.
+	if *internalClearClipboard {
+		// Wenn ja, setzen wir einen speziellen Wert in flags oder führen direkt die Aktion aus
+		// und beenden das Programm frühzeitig. Hier ist es einfacher, direkt zu handeln.
+		runClearerDaemonMode(*internalClearDelay)
+		// runClearerDaemonMode wird os.Exit() aufrufen, daher kommt das Programm hier nicht weiter.
+	}
+	// ----------------------------------------------------
 
 	return flags
 }
