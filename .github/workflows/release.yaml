@@ -232,6 +232,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/darwin-arm64
+          asset_path: ./dist/darwin-arm64/kpasscli
           asset_name: darwin-arm64
           asset_content_type: application/octet-stream
