@@ -28,7 +28,7 @@ jobs:
         sudo apt-get install -y libx11-dev
 
     - name: Build
-      run: go build -v -o dist/linux-amd64
+      run: go build -v -o dist/linux-amd64/kpasscli
       
     - name: Check build result
       run: ls -l dist/linux-amd64
