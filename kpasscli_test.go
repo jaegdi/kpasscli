@@ -9,8 +9,8 @@ import (
 )
 
 func runKpasscli(args ...string) (string, error) {
-	ostyp := "lin"
-	distdir := "./dist/linux-amd64"
+	ostyp := ""
+	distdir := ""
 	os := runtime.GOOS
 	arch := runtime.GOARCH
 	if arch == "arm64" {
@@ -30,7 +30,10 @@ func runKpasscli(args ...string) (string, error) {
 	default:
 		ostyp = "lin"
 	}
-	cmd := exec.Command(distdir+"/kpasscli", append([]string{"-c", "config-" + ostyp + ".yaml"}, args...)...)
+	cmdpath := distdir + "/kpasscli"
+	cmdargs := append([]string{"-c", "config-" + ostyp + ".yaml"}, args...)
+	fmt.Printf("command: %s %s\n", cmdpath, cmdargs)
+	cmd := exec.Command(cmdpath, cmdargs...)
 	output, err := cmd.CombinedOutput()
 	return strings.TrimSpace(string(output)), err
 }

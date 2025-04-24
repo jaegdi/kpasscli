@@ -1,5 +1,6 @@
 # the path and file name of the keepass database
-database_path: C:\Users\or01fo\devel\go\kpasscli\testpass.kdbx
+# /Users/or01fo/projects/github/kpasscli/
+database_path: testpass.kdbx
 
 
 # the default output for the password, can be 'stdout' or 'clipboard'

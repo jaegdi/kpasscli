@@ -25,10 +25,10 @@ jobs:
       - name: Build
         run: |
           go mod tidy
-          go build -v -o dist
+          go build -v -o dist/linux-amd64
 
       - name: Run tests
-        run: go test -v ./...
+        run: go test -v
 
       - name: Create Release
         id: create_release
@@ -47,7 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/kpasscli
+          asset_path: dist/linux-amd64/kpasscli
           asset_name: kpasscli
           asset_content_type: application/octet-stream
 
@@ -83,10 +83,10 @@ jobs:
           go-version: "1.23.7"
 
       - name: Build
-        run: go build -v -o dist
+        run: go build -v -o dist/linux-amd64
 
       - name: Run tests
-        run: go test -v ./...
+        run: go test -v 
 
       - name: Create Release
         id: create_release
@@ -105,7 +105,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/kpasscli
+          asset_path: ./dist/linux-amd64/kpasscli
           asset_name: kpasscli-rhel8
           asset_content_type: application/octet-stream
 
@@ -123,14 +123,14 @@ jobs:
         run: |
           docker run --rm -v $(pwd):/src -w /src registry.access.redhat.com/ubi7/ubi:latest /bin/bash -c "
           yum -y install go gcc glibc-static && \
-          go build -o kpasscli
+          go build -o dist/linux-amd64
           "
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: kpasscli
-          path: ./kpasscli
+          path: dist/linux-amd64/kpasscli
 
   build-mac-m1:
     runs-on: macos-latest
@@ -145,10 +145,10 @@ jobs:
           go-version: "1.23.3"
 
       - name: Build
-        run: go build -v -o dist/kpasscli-mac-m1
+        run: go build -v -o dist/darwin-arm64
 
-      # - name: Run tests
-      #   run: go test -v ./...
+      - name: Run tests
+        run: go test -v
 
       - name: Create Release
         id: create_release
@@ -166,11 +166,11 @@ jobs:
           mkdir -p dist/pkg
           cat > dist/pkg/install.sh << 'EOL'
           #!/bin/bash
-          sudo cp kpasscli-mac-m1 /usr/local/bin/kpasscli
+          sudo cp dist/darwin-arm64/kpasscli /usr/local/bin/kpasscli
           sudo chmod +x /usr/local/bin/kpasscli
           EOL
           chmod +x dist/pkg/install.sh
-          cd dist && tar -czf kpasscli-mac-m1-installer.tar.gz pkg/install.sh kpasscli-mac-m1
+          cd dist && tar -czf darwin-arm64-installer.tar.gz pkg/install.sh darwin-arm64
 
       - name: Create App Package
         run: |
@@ -200,11 +200,11 @@ jobs:
           EOL
 
           # Copy binary to app package
-          cp dist/kpasscli-mac-m1 dist/KPassCLI.app/Contents/MacOS/kpasscli
+          cp dist/darwin-arm64/kpasscli dist/KPassCLI.app/Contents/MacOS/kpasscli
           chmod +x dist/KPassCLI.app/Contents/MacOS/kpasscli
 
           # Create DMG
-          hdiutil create -volname "KPassCLI" -srcfolder dist/KPassCLI.app -ov -format UDZO dist/kpasscli-mac-m1.dmg
+          hdiutil create -volname "KPassCLI" -srcfolder dist/KPassCLI.app -ov -format UDZO dist/darwin-arm64.dmg
 
       - name: Upload DMG Package
         uses: actions/upload-release-asset@v1
@@ -212,8 +212,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/kpasscli-mac-m1.dmg
-          asset_name: kpasscli-mac-m1.dmg
+          asset_path: ./dist/darwin-arm64.dmg
+          asset_name: darwin-arm64.dmg
           asset_content_type: application/x-apple-diskimage
 
       - name: Upload Installer Package
@@ -222,8 +222,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/kpasscli-mac-m1-installer.tar.gz
-          asset_name: kpasscli-mac-m1-installer.tar.gz
+          asset_path: ./dist/darwin-arm64-installer.tar.gz
+          asset_name: darwin-arm64-installer.tar.gz
           asset_content_type: application/gzip
 
       - name: Upload Release Asset
@@ -232,6 +232,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/kpasscli-mac-m1
-          asset_name: kpasscli-mac-m1
+          asset_path: ./dist/darwin-arm64
+          asset_name: darwin-arm64
           asset_content_type: application/octet-stream
