@@ -25,7 +25,7 @@ jobs:
       - name: Build
         run: |
           go mod tidy
-          go build -v -o dist/linux-amd64
+          go build -v -o dist/linux-amd64/kpasscli
 
       - name: Run tests
         run: go test -v
@@ -83,7 +83,7 @@ jobs:
           go-version: "1.23.7"
 
       - name: Build
-        run: go build -v -o dist/linux-amd64
+        run: go build -v -o dist/linux-amd64/kpasscli
 
       - name: Run tests
         run: go test -v 
@@ -105,7 +105,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_BUILD }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/linux-amd64/kpasscli
+          asset_path: dist/linux-amd64/kpasscli
           asset_name: kpasscli-rhel8
           asset_content_type: application/octet-stream
 
@@ -123,13 +123,13 @@ jobs:
         run: |
           docker run --rm -v $(pwd):/src -w /src registry.access.redhat.com/ubi7/ubi:latest /bin/bash -c "
           yum -y install go gcc glibc-static && \
-          go build -o dist/linux-amd64
+          go build -o dist/linux-amd64/kpasscli
           "
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: kpasscli
+          name: kpasscli-ubi7
           path: dist/linux-amd64/kpasscli
 
   build-mac-m1:
@@ -145,7 +145,7 @@ jobs:
           go-version: "1.23.3"
 
       - name: Build
-        run: go build -v -o dist/darwin-arm64
+        run: go build -v -o dist/darwin-arm64/kpasscli
 
       - name: Run tests
         run: go test -v
@@ -170,7 +170,7 @@ jobs:
           sudo chmod +x /usr/local/bin/kpasscli
           EOL
           chmod +x dist/pkg/install.sh
-          cd dist && tar -czf darwin-arm64-installer.tar.gz pkg/install.sh darwin-arm64
+          cd dist && tar -czf darwin-arm64-installer.tar.gz pkg/install.sh darwin-arm64/kpasscli
 
       - name: Create App Package
         run: |
