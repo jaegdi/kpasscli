@@ -2,11 +2,12 @@ package config
 
 import (
 	"fmt"
-	"kpasscli/src/debug"
 	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v2"
+
+	"kpasscli/src/debug"
 )
 
 // Config represents the application configuration.
@@ -21,25 +22,14 @@ type Config struct {
 	OutputFormat       string `yaml:"output_format"`
 }
 
-// Load reads and parses the configuration file.
-// Returns:
+// Load reads and parses the configuration file from the given path.
 //
-//	*Config: Parsed configuration
-//	error: Any error encountered while reading or parsing
-//
-// Load loads the configuration from a YAML file. It first checks for the
-// presence of "config.yaml" in the current directory. If the file does not
-// exist there, it attempts to load the configuration from the user's home
-// directory under ".config/kpasscli/config.yaml". The function reads the
-// configuration file, unmarshals its content into a Config struct, and
-// returns a pointer to the Config struct along with any error encountered
-// during the process.
+// Parameters:
+//   - configPath: The path to the configuration file to load.
 //
 // Returns:
-//   - *Config: A pointer to the Config struct containing the configuration
-//     data.
-//   - error: An error object if any error occurred during the loading or
-//     unmarshalling of the configuration file, otherwise nil.
+//   - *Config: The loaded configuration struct.
+//   - error: Any error encountered during loading or parsing.
 func Load(configPath string) (*Config, error) {
 	if configPath == "" {
 		configPath = filepath.Join(".", "config.yaml")
@@ -64,7 +54,11 @@ func Load(configPath string) (*Config, error) {
 	return &config, nil
 }
 
-// CreateExampleConfig creates an example configuration file in the current directory.
+// CreateExampleConfig creates an example configuration file at the specified path.
+//
+// Parameters:
+//   - configPath: The path where the example config file should be created.
+//
 // Returns:
 //   - error: Any error encountered during the creation of the config file.
 func CreateExampleConfig(configPath string) error {

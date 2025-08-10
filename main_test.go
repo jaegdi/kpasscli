@@ -116,8 +116,8 @@ func fakeNewFinder(results []search.Result, findErr error) func(*gokeepasslib.Da
 	}
 }
 
-func fakeNewHandler(outputErr error) func(output.Type) output.Handler {
-	return func(output.Type) output.Handler {
+func fakeNewHandler(outputErr error) func(output.OutputType) output.Handler {
+	return func(output.OutputType) output.Handler {
 		return &fakeHandler{outputErr: outputErr}
 	}
 }

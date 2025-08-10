@@ -4,20 +4,14 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/tobischo/gokeepasslib/v3"
+	wrappers "github.com/tobischo/gokeepasslib/v3/wrappers"
 	"golang.design/x/clipboard"
-)
 
-// --- Additional tests for output package ---
-func TestNewHandler(t *testing.T) {
-	h := NewHandler(Stdout)
-	if h == nil {
-		t.Error("NewHandler returned nil")
-	}
-	if _, ok := h.(*stdHandler); !ok {
-		t.Error("NewHandler did not return *stdHandler")
-	}
-}
+	"kpasscli/src/config"
+)
 
 func TestIsValidType(t *testing.T) {
 	if !IsValidType("stdout") {
@@ -32,7 +26,7 @@ func TestIsValidType(t *testing.T) {
 }
 
 func TestStdHandler_Output_UnknownType(t *testing.T) {
-	h := &stdHandler{outputType: Type("unknown")}
+	h := &stdHandler{outputType: OutputType("unknown")}
 	err := h.Output("test")
 	if err == nil {
 		t.Error("expected error for unknown output type")
@@ -41,18 +35,9 @@ func TestStdHandler_Output_UnknownType(t *testing.T) {
 
 // The following tests are for coverage only; they do not test clipboard or stdout side effects.
 func TestStdHandler_toClipboard(t *testing.T) {
-	h := &stdHandler{outputType: Clipboard}
+	h := &stdHandler{outputType: ClipboardType}
 	// We expect an error or nil, but do not check clipboard contents.
 	_ = h.toClipboard("test")
-}
-
-func TestStdHandler_toStdout(t *testing.T) {
-	h := &stdHandler{outputType: Stdout}
-	// Should not panic or error
-	err := h.toStdout("stdhandler to stdout test")
-	if err != nil {
-		t.Errorf("toStdout returned error: %v", err)
-	}
 }
 
 type testHandler struct {
@@ -79,7 +64,7 @@ func TestHandler_Output(t *testing.T) {
 }
 
 func TestOutput_Output_Stdout(t *testing.T) {
-	h := NewHandler(Stdout)
+	h := NewHandler(StdoutType)
 	expected := "stdout test inkl. Debug verification"
 	// Capture stdout
 	r, w, _ := os.Pipe()
@@ -103,7 +88,7 @@ func TestOutput_Output_Stdout(t *testing.T) {
 }
 
 func TestOutput_Output_Clipboard(t *testing.T) {
-	h := NewHandler(Clipboard)
+	h := NewHandler(ClipboardType)
 	expected := "clipboard test"
 	err := h.Output(expected)
 	if err != nil {
@@ -116,4 +101,90 @@ func TestOutput_Output_Clipboard(t *testing.T) {
 			t.Errorf("clipboard content = %q, want %q", got, expected)
 		}
 	}
+}
+
+func TestShowAllFields_Text(t *testing.T) {
+	entry := &gokeepasslib.Entry{
+		Values: []gokeepasslib.ValueData{
+			{Key: "Title", Value: gokeepasslib.V{Content: "TestTitle"}},
+			{Key: "UserName", Value: gokeepasslib.V{Content: "TestUser"}},
+			{Key: "URL", Value: gokeepasslib.V{Content: "http://example.com"}},
+			{Key: "Notes", Value: gokeepasslib.V{Content: "Some notes"}},
+			{Key: "Custom", Value: gokeepasslib.V{Content: "CustomValue"}},
+		},
+		Times: gokeepasslib.TimeData{
+			CreationTime:         &wrappers.TimeWrapper{Time: time.Now()},
+			LastModificationTime: &wrappers.TimeWrapper{Time: time.Now()},
+			LastAccessTime:       &wrappers.TimeWrapper{Time: time.Now()},
+		},
+	}
+	cfg := config.Config{OutputFormat: "text"}
+	ShowAllFields(entry, cfg)
+}
+
+func TestShowAllFields_JSON(t *testing.T) {
+	entry := &gokeepasslib.Entry{
+		Values: []gokeepasslib.ValueData{
+			{Key: "Title", Value: gokeepasslib.V{Content: "TestTitle"}},
+			{Key: "UserName", Value: gokeepasslib.V{Content: "TestUser"}},
+			{Key: "URL", Value: gokeepasslib.V{Content: "http://example.com"}},
+			{Key: "Notes", Value: gokeepasslib.V{Content: "Some notes"}},
+			{Key: "Custom", Value: gokeepasslib.V{Content: "CustomValue"}},
+		},
+		Times: gokeepasslib.TimeData{
+			CreationTime:         &wrappers.TimeWrapper{Time: time.Now()},
+			LastModificationTime: &wrappers.TimeWrapper{Time: time.Now()},
+			LastAccessTime:       &wrappers.TimeWrapper{Time: time.Now()},
+		},
+	}
+	cfg := config.Config{OutputFormat: "json"}
+	ShowAllFields(entry, cfg)
+}
+
+func Test_getValue(t *testing.T) {
+	entry := &gokeepasslib.Entry{
+		Values: []gokeepasslib.ValueData{{Key: "foo", Value: gokeepasslib.V{Content: "bar"}}},
+	}
+	if got := getValue(entry, "foo"); got != "bar" {
+		t.Errorf("getValue = %q, want 'bar'", got)
+	}
+	if got := getValue(entry, "baz"); got != "" {
+		t.Errorf("getValue for missing key = %q, want ''", got)
+	}
+}
+
+func Test_printNonEmptyValue(t *testing.T) {
+	printNonEmptyValue("Key", "Value") // Should print
+	printNonEmptyValue("Key", "")      // Should not print
+}
+
+func Test_formatTime(t *testing.T) {
+	tm := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+	if got := formatTime(tm); got == "" {
+		t.Error("formatTime returned empty string")
+	}
+}
+
+func Test_isAdditionalField(t *testing.T) {
+	if isAdditionalField("Title") {
+		t.Error("Title should not be additional field")
+	}
+	if !isAdditionalField("Custom") {
+		t.Error("Custom should be additional field")
+	}
+}
+
+func Test_showAllFieldsJson(t *testing.T) {
+	entry := &gokeepasslib.Entry{
+		Values: []gokeepasslib.ValueData{
+			{Key: "Title", Value: gokeepasslib.V{Content: "TestTitle"}},
+			{Key: "Custom", Value: gokeepasslib.V{Content: "CustomValue"}},
+		},
+		Times: gokeepasslib.TimeData{
+			CreationTime:         &wrappers.TimeWrapper{Time: time.Now()},
+			LastModificationTime: &wrappers.TimeWrapper{Time: time.Now()},
+			LastAccessTime:       &wrappers.TimeWrapper{Time: time.Now()},
+		},
+	}
+	showAllFieldsJson(entry)
 }

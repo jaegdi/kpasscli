@@ -22,7 +22,7 @@ func RunApp(
 	resolvePassword func(string, *config.Config, string, ...keepass.PasswordPromptFunc) (string, error),
 	openDatabase func(string, string) (*gokeepasslib.Database, error),
 	newFinder func(*gokeepasslib.Database) search.FinderInterface,
-	newHandler func(output.Type) output.Handler,
+	newHandler func(output.OutputType) output.Handler,
 	getEnv func(string) string,
 ) error {
 	debug.Log("Starting kpasscli with item: %s", flags.Item)
@@ -38,7 +38,7 @@ func RunApp(
 			return nil
 		}
 	}
-	c
+	// removed stray 'c'
 	dbPath := resolveDBPath(flags.KdbPath, config)
 	debug.Log("Resolved database path: %s", dbPath)
 	if dbPath == "" {
@@ -81,7 +81,7 @@ func RunApp(
 		return fmt.Errorf("multiple items found")
 	}
 
-	outputType := resolveOutputType(flags.Out, config)
+	outputType := output.ResolveOutputType(flags.Out, config)
 	handler := newHandler(outputType)
 
 	value, err := results[0].GetField(flags.FieldName)
@@ -117,13 +117,3 @@ func main() {
 }
 
 // resolveOutputType remains unchanged
-func resolveOutputType(flagOut string, cfg *config.Config) output.Type {
-	if flagOut != "" {
-		return output.Type(flagOut)
-	}
-	if kpcliout := os.Getenv("KPASSCLI_OUT"); kpcliout != "" {
-		if output.IsValidType(kpcliout) {
-			return output.Type(kpcliout)
-		}
-	}
-}

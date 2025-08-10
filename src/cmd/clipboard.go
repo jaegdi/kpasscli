@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"kpasscli/src/debug"
 	"log"
 	"os"
 	"os/exec"
@@ -10,6 +9,8 @@ import (
 
 	// "syscall" // Wird hier nicht mehr direkt benötigt
 	"time"
+
+	"kpasscli/src/debug"
 )
 
 // runClearerDaemonMode ist die Funktion, die im separaten, losgelösten Prozess ausgeführt wird.

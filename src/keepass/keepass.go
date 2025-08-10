@@ -12,6 +12,7 @@ import (
 
 	"kpasscli/src/config"
 	"kpasscli/src/debug"
+	"kpasscli/src/output"
 	"kpasscli/src/search"
 )
 
@@ -51,6 +52,11 @@ func OpenDatabase(path string, password string) (*gokeepasslib.Database, error) 
 	return db, nil
 }
 
+// PasswordPromptFunc defines a function type for prompting the user for a password.
+type PasswordPromptFunc func() (string, error)
+
+// ResolvePassword retrieves the database password from a file, executable, or prompt.
+// The promptFunc parameter is optional; if nil, getPasswordFromPrompt is used.
 // ResolvePassword retrieves the database password from a file or executable.
 // It first checks if the password parameter is provided. If not, it falls back to the configuration.
 // If the configuration specifies an executable, it runs the executable to get the password.
@@ -58,18 +64,14 @@ func OpenDatabase(path string, password string) (*gokeepasslib.Database, error) 
 // If the password parameter is a regular file, it reads the password from the file.
 // If the password parameter is an executable, it runs the executable to get the password.
 // Parameters:
-//   - passParam: Path to password file or executable
-//   - cfg: Configuration object containing password file or executable paths
+//   - passParam: The password parameter provided via command-line flag.
+//   - cfg: The configuration object containing default paths and executables.
+//   - kdbpassenv: The environment variable for the password, if set.
+//   - promptFunc: Optional function to prompt for password if no file/executable is provided.
 //
 // Returns:
-//   - string: The resolved password
-//   - error: Any error encountered during password retrieval
-//
-// PasswordPromptFunc defines a function type for prompting the user for a password.
-type PasswordPromptFunc func() (string, error)
-
-// ResolvePassword retrieves the database password from a file, executable, or prompt.
-// The promptFunc parameter is optional; if nil, getPasswordFromPrompt is used.
+//   - string: The resolved password.
+//   - error: Any error encountered during resolution.
 func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string, promptFunc ...PasswordPromptFunc) (string, error) {
 
 	passfile := ""
@@ -149,6 +151,9 @@ func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string, pr
 // leading or trailing whitespace, and returns the password as a string.
 // If an error occurs while reading the password, it returns an empty string
 // and the encountered error.
+// Returns:
+//   - string: The entered password, or an empty string if an error occurs.
+//   - error: An error if one occurs while reading the password.
 func getPasswordFromPrompt() (string, error) {
 	// If no valid file or executable is found, prompt the user for the password
 	fmt.Print("Enter password: ")
@@ -165,19 +170,14 @@ func getPasswordFromPrompt() (string, error) {
 	return "", err
 }
 
-// ResolveDatabasePath determines the path to the KeePass database file.
-// It checks the following sources in order of precedence:
-// 1. The provided flagPath argument. If it is not empty, it is returned.
-// 2. The environment variable "KPASSCLI_KDBPATH". If it is set, its value is returned.
-// 3. The DatabasePath field in the provided config.Config object. If it is not nil and its DatabasePath field is not empty, it is returned.
-// If none of these sources provide a path, an empty string is returned.
+// ResolveDatabasePath returns the KeePass database path based on flag, environment, or config.
 //
 // Parameters:
-// - flagPath: A string representing the path provided via a command-line flag.
-// - cfg: A pointer to a config.Config object that may contain the database path.
+//   - flagPath: The path provided via command-line flag.
+//   - cfg: The configuration object containing a default database path.
 //
 // Returns:
-// A string representing the resolved database path, or an empty string if no path is found.
+//   - string: The resolved database path, or empty string if not found.
 func ResolveDatabasePath(flagPath string, cfg *config.Config) string {
 	if flagPath != "" {
 		return flagPath
@@ -192,40 +192,61 @@ func ResolveDatabasePath(flagPath string, cfg *config.Config) string {
 }
 
 // GetAllFields finds a specific entry by path and displays all its fields.
+//
+// Parameters:
+//   - db: The KeePass database to search.
+//   - config: The configuration object for output formatting.
+//   - itemPath: The path of the entry to display.
+//
+// Returns:
+//   - error: Any error encountered during the operation.
+//
+// GetAllFields finds a specific entry by path and displays all its fields.
+//
+// Parameters:
+//   - db: The KeePass database to search.
+//   - config: The configuration object for output formatting.
+//   - itemPath: The path of the entry to display.
+//
+// Returns:
+//   - error: Any error encountered during the operation.
 func GetAllFields(db *gokeepasslib.Database, config *config.Config, itemPath string) error {
-	finder := search.NewFinder(db)
-	// Rename the variable to 'results' to better reflect its type ([]search.Result)
+	return GetAllFieldsWithFinder(db, config, itemPath, nil, nil)
+}
+
+// GetAllFieldsWithFinder is like GetAllFields but allows dependency injection for testing.
+// If finder is nil, uses search.NewFinder(db). If showAllFields is nil, uses output.ShowAllFields.
+func GetAllFieldsWithFinder(
+	db *gokeepasslib.Database,
+	config *config.Config,
+	itemPath string,
+	finder search.FinderInterface,
+	showAllFields func(*gokeepasslib.Entry, config.Config),
+) error {
+	if finder == nil {
+		finder = search.NewFinder(db)
+	}
 	results, err := finder.Find(itemPath)
 	if err != nil {
-		// Wrap the error for better context
 		return fmt.Errorf("error finding entry '%s': %w", itemPath, err)
 	}
-
-	// Handle cases based on the number of results found
 	if len(results) == 0 {
 		return fmt.Errorf("entry not found: %s", itemPath)
 	}
-
 	if len(results) > 1 {
-		// More than one entry found, which is ambiguous for showing all fields.
-		// You might want to list the paths found instead.
 		var foundPaths []string
 		for _, res := range results {
 			foundPaths = append(foundPaths, res.Path)
 		}
 		return fmt.Errorf("multiple entries found for '%s', please specify a unique path: %s", itemPath, strings.Join(foundPaths, ", "))
 	}
-
-	// Exactly one result found. Access the Entry field from the first element.
-	// The 'Entry' field within search.Result is the *gokeepasslib.Entry we need.
 	singleEntry := results[0].Entry
-
-	// It's good practice to check if the Entry pointer is nil, although Find should ideally populate it.
 	if singleEntry == nil {
 		return fmt.Errorf("found result for '%s', but entry data is unexpectedly nil", itemPath)
 	}
-
-	// Now pass the correct type (*gokeepasslib.Entry) to ShowAllFields
-	output.ShowAllFields(singleEntry, *config)
+	if showAllFields == nil {
+		showAllFields = output.ShowAllFields
+	}
+	showAllFields(singleEntry, *config)
 	return nil
 }

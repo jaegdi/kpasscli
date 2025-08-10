@@ -1,7 +1,13 @@
 /.github
+/.git
 /.vscode
 /archive
 /old-version
-/dist/kpasscli*
-go
-/build
+/dist
+go.mod
+go.sum
+go --- IGNORE ---
+/build*
+/coverage*
+*test.go
+nohup.out

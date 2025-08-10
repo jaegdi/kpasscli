@@ -42,7 +42,16 @@ type Flags struct {
 	ShowAll       bool
 }
 
-// ParseFlags parses flags from the provided FlagSet and args. For production, use ParseFlagsDefault().
+// ParseFlags parses command-line flags from the provided FlagSet and arguments.
+//
+// Parameters:
+//   - fs: The FlagSet to define and parse flags on.
+//   - args: The arguments to parse (typically os.Args[1:]).
+//
+// Returns:
+//   - *Flags: The parsed Flags struct with all options set.
+//
+// For production, use ParseFlagsDefault().
 func ParseFlags(fs *flag.FlagSet, args []string) *Flags {
 	flags := &Flags{}
 	fs.StringVar(&flags.KdbPath, "kdbpath", "", "Path to KeePass database file")
@@ -93,11 +102,12 @@ func ParseFlags(fs *flag.FlagSet, args []string) *Flags {
 }
 
 // ParseFlagsDefault parses flags from the global flag.CommandLine and os.Args[1:].
-// This is the default function to use in production.
-// It sets up the flags and returns the parsed Flags struct.
-// It also sets the usage function to show help documentation.
-// It is typically called in the main function of the application.
-// It initializes the logging, handles special flags, and exits the program if necessary.
+//
+// This is the default function to use in production. It sets up the flags, sets the usage function
+// to show help documentation, and returns the parsed Flags struct. Typically called in main().
+//
+// Returns:
+//   - *Flags: The parsed Flags struct with all options set.
 func ParseFlagsDefault() *Flags {
 	return ParseFlags(flag.CommandLine, nil)
 }

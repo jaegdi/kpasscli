@@ -12,12 +12,28 @@ import (
 
 var enabled bool
 
+// Enabled returns true if debug logging is enabled.
+//
+// Returns:
+//   - bool: True if debug logging is enabled, false otherwise.
+func Enabled() bool {
+	return enabled
+}
+
 // Enable sets the debug logging flag to true.
+//
+// This function enables debug logging globally for the application.
 func Enable() {
 	enabled = true
 }
 
-// Optimized error handling with centralized error reporting
+// ErrMsg prints an error message and exits the program if err is not nil.
+//
+// Parameters:
+//   - err: The error to check.
+//   - msg: The message to print if err is not nil.
+//
+// If err is not nil, this function prints the error and terminates the program with exit code 1.
 func ErrMsg(err error, msg string) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR %s: %v\n", msg, err)
@@ -26,7 +42,9 @@ func ErrMsg(err error, msg string) {
 }
 
 // Log logs a debug message if debug logging is enabled.
+//
 // It includes the name of the calling function and the line number in the log message.
+//
 // Parameters:
 //   - format: The format string for the log message, similar to fmt.Printf.
 //   - v: The values to be formatted according to the format string.

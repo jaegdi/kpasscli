@@ -57,23 +57,27 @@
 				
 				<option value="file0">kpasscli/init.go (55.2%)</option>
 				
-				<option value="file1">kpasscli/main.go (78.2%)</option>
+				<option value="file1">kpasscli/main.go (83.0%)</option>
 				
 				<option value="file2">kpasscli/src/cmd/cli-params.go (97.0%)</option>
 				
-				<option value="file3">kpasscli/src/config/config.go (84.6%)</option>
+				<option value="file3">kpasscli/src/cmd/clipboard.go (40.7%)</option>
 				
-				<option value="file4">kpasscli/src/debug/debug.go (31.6%)</option>
+				<option value="file4">kpasscli/src/cmd/clipboard_unix.go (100.0%)</option>
 				
-				<option value="file5">kpasscli/src/doc/help.go (100.0%)</option>
+				<option value="file5">kpasscli/src/config/config.go (85.7%)</option>
 				
-				<option value="file6">kpasscli/src/doc/man.go (100.0%)</option>
+				<option value="file6">kpasscli/src/debug/debug.go (30.0%)</option>
 				
-				<option value="file7">kpasscli/src/keepass/keepass.go (64.6%)</option>
+				<option value="file7">kpasscli/src/doc/help.go (100.0%)</option>
 				
-				<option value="file8">kpasscli/src/output/handler.go (94.1%)</option>
+				<option value="file8">kpasscli/src/doc/man.go (100.0%)</option>
 				
-				<option value="file9">kpasscli/src/search/finder.go (86.8%)</option>
+				<option value="file9">kpasscli/src/keepass/keepass.go (53.7%)</option>
+				
+				<option value="file10">kpasscli/src/output/handler.go (83.6%)</option>
+				
+				<option value="file11">kpasscli/src/search/finder.go (86.8%)</option>
 				
 				</select>
 			</div>
@@ -174,7 +178,7 @@ func RunApp(
         resolvePassword func(string, *config.Config, string, ...keepass.PasswordPromptFunc) (string, error),
         openDatabase func(string, string) (*gokeepasslib.Database, error),
         newFinder func(*gokeepasslib.Database) search.FinderInterface,
-        newHandler func(output.Type) output.Handler,
+        newHandler func(output.OutputType) output.Handler,
         getEnv func(string) string,
 ) error <span class="cov8" title="1">{
         debug.Log("Starting kpasscli with item: %s", flags.Item)
@@ -190,7 +194,7 @@ func RunApp(
                         return nil
                 }</span>
         }
-
+        // removed stray 'c'
         <span class="cov8" title="1">dbPath := resolveDBPath(flags.KdbPath, config)
         debug.Log("Resolved database path: %s", dbPath)
         if dbPath == "" </span><span class="cov8" title="1">{
@@ -233,7 +237,7 @@ func RunApp(
                 <span class="cov8" title="1">return fmt.Errorf("multiple items found")</span>
         }
 
-        <span class="cov8" title="1">outputType := resolveOutputType(flags.Out, config)
+        <span class="cov8" title="1">outputType := output.ResolveOutputType(flags.Out, config)
         handler := newHandler(outputType)
 
         value, err := results[0].GetField(flags.FieldName)
@@ -269,20 +273,6 @@ func main() <span class="cov0" title="0">{
 }
 
 // resolveOutputType remains unchanged
-func resolveOutputType(flagOut string, cfg *config.Config) output.Type <span class="cov8" title="1">{
-        if flagOut != "" </span><span class="cov0" title="0">{
-                return output.Type(flagOut)
-        }</span>
-        <span class="cov8" title="1">if kpcliout := os.Getenv("KPASSCLI_OUT"); kpcliout != "" </span><span class="cov0" title="0">{
-                if output.IsValidType(kpcliout) </span><span class="cov0" title="0">{
-                        return output.Type(kpcliout)
-                }</span>
-        }
-        <span class="cov8" title="1">if cfg != nil &amp;&amp; cfg.DefaultOutput != "" </span><span class="cov8" title="1">{
-                return output.Type(cfg.DefaultOutput)
-        }</span>
-        <span class="cov0" title="0">return output.Stdout</span>
-}
 </pre>
 		
 		<pre class="file" id="file2" style="display: none">package cmd
@@ -317,6 +307,7 @@ type Flags struct {
         FieldName     string
         Out           string
         ConfigPath    string
+        ClearAfter    int
         CaseSensitive bool
         ExactMatch    bool
         ShowMan       bool
@@ -325,9 +316,19 @@ type Flags struct {
         VerifyFlag    bool
         CreateConfig  bool
         PrintConfig   bool
+        ShowAll       bool
 }
 
-// ParseFlags parses flags from the provided FlagSet and args. For production, use ParseFlagsDefault().
+// ParseFlags parses command-line flags from the provided FlagSet and arguments.
+//
+// Parameters:
+//   - fs: The FlagSet to define and parse flags on.
+//   - args: The arguments to parse (typically os.Args[1:]).
+//
+// Returns:
+//   - *Flags: The parsed Flags struct with all options set.
+//
+// For production, use ParseFlagsDefault().
 func ParseFlags(fs *flag.FlagSet, args []string) *Flags <span class="cov8" title="1">{
         flags := &amp;Flags{}
         fs.StringVar(&amp;flags.KdbPath, "kdbpath", "", "Path to KeePass database file")
@@ -378,25 +379,308 @@ func ParseFlags(fs *flag.FlagSet, args []string) *Flags <span class="cov8" title
 }</span>
 
 // ParseFlagsDefault parses flags from the global flag.CommandLine and os.Args[1:].
-// This is the default function to use in production.
-// It sets up the flags and returns the parsed Flags struct.
-// It also sets the usage function to show help documentation.
-// It is typically called in the main function of the application.
-// It initializes the logging, handles special flags, and exits the program if necessary.
+//
+// This is the default function to use in production. It sets up the flags, sets the usage function
+// to show help documentation, and returns the parsed Flags struct. Typically called in main().
+//
+// Returns:
+//   - *Flags: The parsed Flags struct with all options set.
 func ParseFlagsDefault() *Flags <span class="cov0" title="0">{
         return ParseFlags(flag.CommandLine, nil)
 }</span>
 </pre>
 		
-		<pre class="file" id="file3" style="display: none">package config
+		<pre class="file" id="file3" style="display: none">package cmd
+
+import (
+        "log"
+        "os"
+        "os/exec"
+        "runtime" // Kann für performClipboardClear nützlich sein
+        "strconv"
+
+        // "syscall" // Wird hier nicht mehr direkt benötigt
+        "time"
+
+        "kpasscli/src/debug"
+)
+
+// runClearerDaemonMode ist die Funktion, die im separaten, losgelösten Prozess ausgeführt wird.
+// Sie wartet die angegebene Anzahl von Sekunden und ruft dann performClipboardClear auf,
+// um die Zwischenablage zu löschen. Danach beendet sie den Prozess.
+// Parameter:
+//   - delaySeconds: Die Anzahl der Sekunden, die gewartet werden soll, bevor die Zwischenablage gelöscht wird.
+func runClearerDaemonMode(delaySeconds int) <span class="cov0" title="0">{
+        if delaySeconds &lt;= 0 </span><span class="cov0" title="0">{
+                os.Exit(1) // Sollte nicht passieren, aber sicher ist sicher
+        }</span>
+
+        // Warte die angegebene Zeit
+        <span class="cov0" title="0">debug.Log("Clearer daemon started, waiting for %d seconds.", delaySeconds)
+        time.Sleep(time.Duration(delaySeconds) * time.Second)
+
+        // Führe die eigentliche Löschaktion aus
+        debug.Log("Clearer daemon delay finished, attempting to clear clipboard.")
+        performClipboardClear()
+
+        debug.Log("Clearer daemon finished.")
+        os.Exit(0)</span> // Erfolgreich beendet nach dem Löschen (oder Versuch)
+}
+
+// clearWaylandClipboard versucht, den Befehl zum Löschen der Zwischenablage unter Wayland zu finden und vorzubereiten.
+// Es priorisiert 'wl-copy' und fällt auf 'xclip' oder 'xsel' zurück, falls 'wl-copy' nicht verfügbar ist.
+// Rückgabewerte:
+//   - clearCmdPath: Der Pfad zum gefundenen Befehl (oder leer, wenn keiner gefunden wurde).
+//   - cmd: Ein vorbereitetes *exec.Cmd Objekt (kann nil sein, wenn pbcopy spezielle Behandlung braucht oder kein Befehl gefunden wurde).
+func clearWaylandClipboard() (clearCmdPath string, cmd *exec.Cmd) <span class="cov8" title="1">{
+        var err error
+        var args []string
+        clearCmdPath, err = exec.LookPath("wl-copy")
+        if err == nil </span><span class="cov8" title="1">{
+                args = []string{"-c"}
+                debug.Log("Using wl-copy to clear Wayland clipboard")
+        }</span> else<span class="cov0" title="0"> {
+                debug.Log("wl-copy not found, trying xclip/xsel for Wayland (might not work)")
+                clearCmdPath, err = exec.LookPath("xclip")
+                if err == nil </span><span class="cov0" title="0">{
+                        args = []string{"-selection", "clipboard", "-in", "/dev/null"}
+                        debug.Log("Using xclip as fallback")
+                }</span> else<span class="cov0" title="0"> {
+                        clearCmdPath, err = exec.LookPath("xsel")
+                        if err == nil </span><span class="cov0" title="0">{
+                                args = []string{"-b", "-c"}
+                                debug.Log("Using xsel as fallback")
+                        }</span> else<span class="cov0" title="0"> {
+                                // Kein geeignetes Kommando gefunden
+                                clearCmdPath = "" // Sicherstellen, dass der Pfad leer ist
+                        }</span>
+                }
+        }
+        // Erstelle das Cmd-Objekt nur, wenn ein Pfad gefunden wurde
+        <span class="cov8" title="1">if clearCmdPath != "" </span><span class="cov8" title="1">{
+                cmd = exec.Command(clearCmdPath, args...)
+        }</span>
+        <span class="cov8" title="1">return clearCmdPath, cmd</span>
+}
+
+// clearX11Clipboard versucht, den Befehl zum Löschen der Zwischenablage unter X11 zu finden und vorzubereiten.
+// Es priorisiert 'xclip' und fällt auf 'xsel' zurück, falls 'xclip' nicht verfügbar ist.
+// Rückgabewerte:
+//   - clearCmdPath: Der Pfad zum gefundenen Befehl (oder leer, wenn keiner gefunden wurde).
+//   - cmd: Ein vorbereitetes *exec.Cmd Objekt (oder nil, wenn kein Befehl gefunden wurde).
+func clearX11Clipboard() (clearCmdPath string, cmd *exec.Cmd) <span class="cov8" title="1">{
+        var err error
+        var args []string
+        clearCmdPath, err = exec.LookPath("xclip")
+        if err == nil </span><span class="cov8" title="1">{
+                args = []string{"-selection", "clipboard", "-in", "/dev/null"}
+                debug.Log("Using xclip to clear X11 clipboard")
+        }</span> else<span class="cov0" title="0"> {
+                clearCmdPath, err = exec.LookPath("xsel")
+                if err == nil </span><span class="cov0" title="0">{
+                        args = []string{"-b", "-c"}
+                        debug.Log("Using xsel to clear X11 clipboard")
+                }</span> else<span class="cov0" title="0"> {
+                        // Kein geeignetes Kommando gefunden
+                        clearCmdPath = "" // Sicherstellen, dass der Pfad leer ist
+                        log.Printf("Warning: Could not find 'xclip' or 'xsel' to clear Linux X11 clipboard: %v", err)
+                }</span>
+        }
+        // Erstelle das Cmd-Objekt nur, wenn ein Pfad gefunden wurde
+        <span class="cov8" title="1">if clearCmdPath != "" </span><span class="cov8" title="1">{
+                cmd = exec.Command(clearCmdPath, args...)
+        }</span>
+        <span class="cov8" title="1">return clearCmdPath, cmd</span>
+}
+
+// clearDarwinClipboard versucht, den Befehl 'pbcopy' zum Löschen der Zwischenablage unter macOS (Darwin) vorzubereiten.
+// Das Löschen erfolgt, indem ein leerer Input an 'pbcopy' gesendet wird (EOF auf stdin).
+// Rückgabewerte:
+//   - clearCmdPath: Der Pfad zu 'pbcopy' (oder leer, wenn nicht gefunden).
+//   - cmd: Ein vorbereitetes *exec.Cmd Objekt mit konfigurierter StdinPipe (oder nil, wenn 'pbcopy' nicht gefunden wurde).
+func clearDarwinClipboard() (clearCmdPath string, cmd *exec.Cmd) <span class="cov0" title="0">{
+        var err error
+        clearCmdPath, err = exec.LookPath("pbcopy")
+        if err == nil </span><span class="cov0" title="0">{
+                cmd = exec.Command(clearCmdPath) // Keine Argumente nötig
+                stdin, pipeErr := cmd.StdinPipe()
+                if pipeErr != nil </span><span class="cov0" title="0">{
+                        log.Printf("Warning: Could not get stdin pipe for pbcopy: %v", pipeErr)
+                        cmd = nil // Fehler beim Vorbereiten, kein Cmd zurückgeben
+                        return
+                }</span>
+                // Sende sofort EOF, um die Zwischenablage zu leeren
+                <span class="cov0" title="0">closeErr := stdin.Close()
+                if closeErr != nil </span><span class="cov0" title="0">{
+                        log.Printf("Warning: Could not close stdin pipe for pbcopy: %v", closeErr)
+                        // Fahren trotzdem fort, vielleicht funktioniert es dennoch
+                }</span>
+                <span class="cov0" title="0">debug.Log("Using pbcopy to clear macOS clipboard")</span>
+        } else<span class="cov0" title="0"> {
+                log.Printf("Warning: Could not find 'pbcopy' to clear macOS clipboard: %v", err)
+                clearCmdPath = "" // Sicherstellen, dass der Pfad leer ist
+                cmd = nil
+        }</span>
+        <span class="cov0" title="0">return clearCmdPath, cmd</span>
+}
+
+// clearWindowsClipboard bereitet den Befehl zum Löschen der Zwischenablage unter Windows vor.
+// Verwendet 'cmd /c echo off | clip'.
+// Rückgabewerte:
+//   - clearCmdPath: Der Pfad zu 'cmd'.
+//   - cmd: Ein vorbereitetes *exec.Cmd Objekt.
+func clearWindowsClipboard() (clearCmdPath string, cmd *exec.Cmd) <span class="cov0" title="0">{
+        clearCmdPath = "cmd"
+        args := []string{"/c", "echo off | clip"}
+        debug.Log("Using 'cmd /c echo off | clip' to clear Windows clipboard")
+        cmd = exec.Command(clearCmdPath, args...) // Erstelle das Cmd-Objekt hier
+        return clearCmdPath, cmd
+}</span>
+
+// performClipboardClear führt die eigentliche Aktion zum Löschen der Zwischenablage aus.
+// Es erkennt das Betriebssystem, ruft die entsprechende Hilfsfunktion (clear*Clipboard) auf,
+// um den Befehl zu erhalten, und führt diesen dann aus.
+// Diese Funktion wird vom Hintergrundprozess (gestartet durch StartClipboardClearer) aufgerufen.
+func performClipboardClear() <span class="cov8" title="1">{
+        debug.Log("Attempting to clear clipboard.")
+
+        var cmd *exec.Cmd
+        var clearCmdPath string // Nur zur Information, ob ein Befehl gefunden wurde
+
+        switch runtime.GOOS </span>{
+        case "linux":<span class="cov8" title="1">
+                if os.Getenv("WAYLAND_DISPLAY") != "" </span><span class="cov8" title="1">{
+                        debug.Log("Detected Wayland display.")
+                        clearCmdPath, cmd = clearWaylandClipboard()
+                }</span> else<span class="cov0" title="0"> { // Annahme: X11
+                        debug.Log("Assuming X11 display.")
+                        clearCmdPath, cmd = clearX11Clipboard()
+                }</span>
+        case "darwin":<span class="cov0" title="0"> // macOS
+                clearCmdPath, cmd = clearDarwinClipboard()</span>
+        case "windows":<span class="cov0" title="0">
+                clearCmdPath, cmd = clearWindowsClipboard()</span>
+        default:<span class="cov0" title="0">
+                log.Printf("Warning: Automatic clipboard clearing not supported on this OS: %s", runtime.GOOS)
+                return</span>
+        }
+
+        // cmd sollte jetzt entweder ein gültiges *exec.Cmd sein oder nil, wenn kein Befehl gefunden/vorbereitet werden konnte.
+        <span class="cov8" title="1">if cmd != nil </span><span class="cov8" title="1">{
+                debug.Log("Executing clipboard clear command: %s %v", cmd.Path, cmd.Args)
+                runErr := cmd.Run() // Führe den Befehl aus und warte auf das Ergebnis
+                if runErr != nil </span><span class="cov0" title="0">{
+                        // Bei pbcopy kann ein Fehler auftreten, wenn stdin geschlossen wird, was aber erwartet wird.
+                        // Prüfe, ob es sich um pbcopy handelt und der Fehler spezifisch ist (optional, falls nötig).
+                        // Fürs Erste loggen wir den Fehler immer.
+                        log.Printf("Warning: Failed to clear clipboard: %v", runErr)
+                }</span> else<span class="cov8" title="1"> {
+                        debug.Log("Clipboard cleared successfully.")
+                }</span>
+        } else<span class="cov0" title="0"> if clearCmdPath == "" </span><span class="cov0" title="0">{ // Explizite Prüfung, ob überhaupt ein Pfad gefunden wurde
+                // Diese Meldung wird bereits in den clear* funktionen geloggt, aber hier nochmal zur Sicherheit.
+                log.Printf("Warning: No suitable command found or prepared to clear clipboard on %s.", runtime.GOOS)
+        }</span> else<span class="cov0" title="0"> {
+                // Fall, der eigentlich nicht eintreten sollte: Pfad gefunden, aber cmd ist nil (z.B. Fehler bei pbcopy pipe)
+                log.Printf("Warning: Command path found (%s), but command execution object could not be prepared.", clearCmdPath)
+        }</span>
+}
+
+// StartClipboardClearer startet einen *neuen*, vom Hauptprozess losgelösten (detached) Prozess,
+// der nach einer bestimmten Verzögerung die Zwischenablage löscht.
+// Der neue Prozess ist eine Instanz der aktuell laufenden kpasscli-Executable,
+// die mit speziellen internen Flags aufgerufen wird.
+// Parameter:
+//   - delaySeconds: Die Anzahl der Sekunden, die der neue Prozess warten soll, bevor er die Zwischenablage löscht.
+func StartClipboardClearer(delaySeconds int) <span class="cov8" title="1">{
+        if delaySeconds &lt;= 0 </span><span class="cov0" title="0">{
+                debug.Log("Clipboard clearing disabled (delay &lt;= 0).")
+                return
+        }</span>
+
+        <span class="cov8" title="1">debug.Log("Attempting to start detached clipboard clearer process with delay: %d seconds", delaySeconds)
+
+        // 1. Finde den Pfad zur aktuell laufenden kpasscli-Executable
+        executablePath, err := os.Executable()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Warning: Could not find executable path to start clearer process: %v", err)
+                return
+        }</span>
+        <span class="cov8" title="1">debug.Log("Executable path for clearer: %s", executablePath)
+
+        // 2. Bereite die Argumente für den neuen Prozess vor
+        args := []string{
+                "--internal-clear-clipboard",                         // Das interne Flag, um runClearerDaemonMode auszulösen
+                "--internal-clear-delay", strconv.Itoa(delaySeconds), // Das Delay übergeben
+        }
+        // Optional: Debug-Flag weitergeben, damit der Hintergrundprozess auch loggt
+        if debug.Enabled() </span><span class="cov0" title="0">{
+                args = append(args, "--debug") // oder "-d"
+                debug.Log("Passing debug flag to clearer process.")
+        }</span>
+        <span class="cov8" title="1">debug.Log("Arguments for clearer process: %v", args)
+
+        // 3. Erstelle das exec.Cmd Objekt
+        cmd := exec.Command(executablePath, args...)
+
+        // 4. WICHTIG: Prozess losgelöst starten (detached)
+        //    Rufe die plattformspezifische Funktion auf, um SysProcAttr zu setzen.
+        //    Dies stellt sicher, dass der neue Prozess weiterläuft, auch wenn der Hauptprozess endet.
+        setDetachedProcessAttributes(cmd)
+        debug.Log("Set detached process attributes.")
+
+        // 5. Starte den Prozess
+        err = cmd.Start() // Startet den Prozess und kehrt sofort zurück
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Warning: Failed to start detached clearer process: %v", err)
+                return
+        }</span>
+
+        // Der Prozess wurde erfolgreich gestartet. Der Hauptprozess kann nun normal beendet werden.
+        // Der neue Prozess läuft im Hintergrund weiter.
+        <span class="cov8" title="1">debug.Log("Detached clearer process started successfully (PID: %d). Main process will now exit.", cmd.Process.Pid)</span>
+
+        // WICHTIG: Wir rufen cmd.Process.Release() NICHT auf, da der Prozess weiterlaufen soll.
+        // Wir rufen cmd.Wait() NICHT auf, da wir nicht auf das Ende des Hintergrundprozesses warten wollen.
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">//go:build !windows
+
+package cmd
+
+import (
+        "os/exec"
+        "syscall"
+)
+
+// setDetachedProcessAttributes configures the command for detached execution on Unix-like systems.
+//
+// It sets the Setsid attribute to true, which starts the process in a new session,
+// detaching it from the controlling terminal. This is commonly used for daemonizing
+// processes on Unix/Linux.
+//
+// Parameters:
+//   - cmd: The exec.Cmd object to configure for detached execution.
+func setDetachedProcessAttributes(cmd *exec.Cmd) <span class="cov8" title="1">{
+        if cmd.SysProcAttr == nil </span><span class="cov8" title="1">{
+                cmd.SysProcAttr = &amp;syscall.SysProcAttr{}
+        }</span>
+        // Unter Linux/Unix: Prozess in einer neuen Sitzung starten, um ihn vom Terminal zu lösen
+        <span class="cov8" title="1">cmd.SysProcAttr.Setsid = true</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package config
 
 import (
         "fmt"
-        "kpasscli/src/debug"
         "os"
         "path/filepath"
 
         "gopkg.in/yaml.v2"
+
+        "kpasscli/src/debug"
 )
 
 // Config represents the application configuration.
@@ -408,27 +692,17 @@ type Config struct {
         PasswordFile       string `yaml:"password_file"`
         PasswordExecutable string `yaml:"password_executable"`
         ConfigfilePath     string `yaml:"configfile_path"`
+        OutputFormat       string `yaml:"output_format"`
 }
 
-// Load reads and parses the configuration file.
-// Returns:
+// Load reads and parses the configuration file from the given path.
 //
-//        *Config: Parsed configuration
-//        error: Any error encountered while reading or parsing
-//
-// Load loads the configuration from a YAML file. It first checks for the
-// presence of "config.yaml" in the current directory. If the file does not
-// exist there, it attempts to load the configuration from the user's home
-// directory under ".config/kpasscli/config.yaml". The function reads the
-// configuration file, unmarshals its content into a Config struct, and
-// returns a pointer to the Config struct along with any error encountered
-// during the process.
+// Parameters:
+//   - configPath: The path to the configuration file to load.
 //
 // Returns:
-//   - *Config: A pointer to the Config struct containing the configuration
-//     data.
-//   - error: An error object if any error occurred during the loading or
-//     unmarshalling of the configuration file, otherwise nil.
+//   - *Config: The loaded configuration struct.
+//   - error: Any error encountered during loading or parsing.
 func Load(configPath string) (*Config, error) <span class="cov8" title="1">{
         if configPath == "" </span><span class="cov0" title="0">{
                 configPath = filepath.Join(".", "config.yaml")
@@ -441,16 +715,23 @@ func Load(configPath string) (*Config, error) <span class="cov8" title="1">{
         if err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
-        <span class="cov8" title="1">var config Config
+        <span class="cov8" title="1">debug.Log("Loaded data: %v\n", string(data))
+        var config Config
         if err := yaml.Unmarshal(data, &amp;config); err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
-        <span class="cov8" title="1">config.ConfigfilePath = configPath
-        debug.Log("Loaded config: %+v\n", config)
+        // config.ConfigfilePath = configPath
+        <span class="cov8" title="1">y, _ := yaml.Marshal(config)
+        debug.Log("Loaded config: %v\n", string(y))
+        config.OutputFormat = "text"
         return &amp;config, nil</span>
 }
 
-// CreateExampleConfig creates an example configuration file in the current directory.
+// CreateExampleConfig creates an example configuration file at the specified path.
+//
+// Parameters:
+//   - configPath: The path where the example config file should be created.
+//
 // Returns:
 //   - error: Any error encountered during the creation of the config file.
 func CreateExampleConfig(configPath string) error <span class="cov8" title="1">{
@@ -478,7 +759,7 @@ func (c *Config) Print() <span class="cov8" title="1">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package debug
+		<pre class="file" id="file6" style="display: none">package debug
 
 import (
         "fmt"
@@ -492,12 +773,28 @@ import (
 
 var enabled bool
 
+// Enabled returns true if debug logging is enabled.
+//
+// Returns:
+//   - bool: True if debug logging is enabled, false otherwise.
+func Enabled() bool <span class="cov0" title="0">{
+        return enabled
+}</span>
+
 // Enable sets the debug logging flag to true.
+//
+// This function enables debug logging globally for the application.
 func Enable() <span class="cov0" title="0">{
         enabled = true
 }</span>
 
-// Optimized error handling with centralized error reporting
+// ErrMsg prints an error message and exits the program if err is not nil.
+//
+// Parameters:
+//   - err: The error to check.
+//   - msg: The message to print if err is not nil.
+//
+// If err is not nil, this function prints the error and terminates the program with exit code 1.
 func ErrMsg(err error, msg string) <span class="cov8" title="1">{
         if err != nil </span><span class="cov0" title="0">{
                 fmt.Fprintf(os.Stderr, "ERROR %s: %v\n", msg, err)
@@ -506,7 +803,9 @@ func ErrMsg(err error, msg string) <span class="cov8" title="1">{
 }
 
 // Log logs a debug message if debug logging is enabled.
+//
 // It includes the name of the calling function and the line number in the log message.
+//
 // Parameters:
 //   - format: The format string for the log message, similar to fmt.Printf.
 //   - v: The values to be formatted according to the format string.
@@ -534,7 +833,7 @@ func Log(format string, v ...interface{}) <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package doc
+		<pre class="file" id="file7" style="display: none">package doc
 
 import (
         "fmt"
@@ -546,10 +845,13 @@ func ShowHelp() <span class="cov8" title="1">{
 Options:
     -kdbpath | -p path      Path to KeePass database file
     -kdbpassword | -w path  Path to password file or executable, if not given asks for password interactively
+    -config | -c            Path to config file
     -item | -i name         Entry to search for
+    -all | -a               Show all entries of the specified item
     -fieldname | -f field   Field to retrieve (default: Password)
     -out | -o type          Output type (stdout/clipboard)
-    -case-sensitive | -c    Enable case-sensitive search
+    -clear-after | -ca      Clear clipboard after N seconds ( default is 20sec, 0=disable, only active if output is clipboard)
+    -case-sensitive | -cs   Enable case-sensitive search
     -exact-match | -e       Enable exact match search
     -config | -c path       Path to configuration file (default: ~/.config/kpasscli/config.yaml)
     -create-config | -cc    Create an example config file
@@ -567,18 +869,24 @@ Example:
     then it's enough to specify the item and my be the fieldname.
 
     # for password
-    kpasscli -i=/Personal/Banking/Account
+    kpasscli -i /Personal/Banking/Account
 
     # or if Account is uniq in the keepass-db
-    kasscli -i=Account
+    kasscli -i Account
+
+    # output passwort to clipboard an clear clipboard after 20 seconds
+    kpasscli -i /Personal/Banking/Account -o clipboard -ca 20
 
     # To verify, if the right item was found, you can use the -verify flag
-    kpasscli -i=Account -v
+    kpasscli -i Account -v
 
     # for username
-    kasscli -i=/Personal/Banking/Account -f=UserName
+    kasscli -i /Personal/Banking/Account -f UserName
 
-For more information, use -man|-m
+    # to show all entries of the specified item
+    kasscli -i /Personal/Banking/Account -a
+
+For more information, use -man | -m
 
 AUTHOR
         Dirk Jäger
@@ -590,7 +898,7 @@ LICENSE
 }</span>
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package doc
+		<pre class="file" id="file8" style="display: none">package doc
 
 import (
         "fmt"
@@ -600,11 +908,13 @@ const manPage = `NAME
     kpasscli - KeePass database command line interface
 
 SYNOPSIS
-    kpasscli [-kdbpath|-p path] [-kdbpassword|-w path] -item|-i name [-fieldname|-f field] [-out|-o type] [-verify|-v] [-man|-m] [-help|-h]
+    kpasscli [-kdbpath|-p path] [-kdbpassword|-w path] [-config|-c] -item|-i name [-fieldname|-f field] [-out|-o type] [-verify|-v] [-man|-m] [-help|-h]
 
 DESCRIPTION
     kpasscli is a command-line tool for querying KeePass database files.
     It allows retrieving entries and their fields using various search methods.
+
+    kpasscli is designed, to work in linux, Mac and Windows systems.
 
     The intention for this tool is to use it in automation scripts, to get secret strings like
     cert keys, key passwords, user or tech. user passwords, tokens, ..., which are stored in a keepass-db.
@@ -618,6 +928,7 @@ DESCRIPTION
     Then it depends of the output config, if this is set to
     - stdout: The value is printed to stdout
     - clipboard: The value is copied into the clipboard and can be pasted wherever it is needed
+      with tho parameter -ca nn  (or -clear-after nn)  the clipboard ist automatically cleared after nn seconds
 
 OPTIONS
     -kdbpath|-p path
@@ -628,6 +939,11 @@ OPTIONS
         Path to a file containing the database password or to an executable that
         outputs the password. For security reasons, the password cannot be provided
         directly on the command line.
+
+    -config|-c config-file
+        Path to a file containing the configuration settings. If not specified,
+        the tool will look for the path in the KDBCONFIG environment variable
+        or the default config file.
 
     -item|-i name
         The entry to search for. This can be:
@@ -644,7 +960,10 @@ OPTIONS
         - stdout: Print to standard output (default)
         - clipboard: Copy to system clipboard
 
-    -case-sensitive|-c
+    -clear-after nn | -ca nn
+        Clear clipboard after nn seconds (default is 20 sec., 0=disable, only active if output is clipboard)
+
+    -case-sensitive|-cs
         Enable case-sensitive search
 
     -exact-match|-e
@@ -699,6 +1018,17 @@ ENVIRONMENT
     KPASSCLI_OUT           Alternative way to specify the output type (stdout/clipboard)
     KPASSCLI_kdbpassword   Alternative way to specify the password file or executable
 
+    define an alias like
+
+        kpcl="kpasscli -ca 20 -o clipboard -i"
+    
+    in your shell-rc file.
+    Then you can call 
+    
+        kpcl account  
+    
+    to get the password of account into the clipboard for 20 seconds. then the clipboard is cleared.
+
 SECURITY
     To enable noninteractive access to open the keepass-db, there are two options:
     - provide a password-file
@@ -739,7 +1069,7 @@ func ShowMan() <span class="cov8" title="1">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package keepass
+		<pre class="file" id="file9" style="display: none">package keepass
 
 import (
         "fmt"
@@ -749,10 +1079,12 @@ import (
         "syscall"
 
         "github.com/tobischo/gokeepasslib/v3"
-        "golang.org/x/crypto/ssh/terminal"
+        "golang.org/x/term"
 
         "kpasscli/src/config"
         "kpasscli/src/debug"
+        "kpasscli/src/output"
+        "kpasscli/src/search"
 )
 
 // OpenDatabase opens and decodes a KeePass database file.
@@ -791,6 +1123,11 @@ func OpenDatabase(path string, password string) (*gokeepasslib.Database, error) 
         <span class="cov0" title="0">return db, nil</span>
 }
 
+// PasswordPromptFunc defines a function type for prompting the user for a password.
+type PasswordPromptFunc func() (string, error)
+
+// ResolvePassword retrieves the database password from a file, executable, or prompt.
+// The promptFunc parameter is optional; if nil, getPasswordFromPrompt is used.
 // ResolvePassword retrieves the database password from a file or executable.
 // It first checks if the password parameter is provided. If not, it falls back to the configuration.
 // If the configuration specifies an executable, it runs the executable to get the password.
@@ -798,18 +1135,14 @@ func OpenDatabase(path string, password string) (*gokeepasslib.Database, error) 
 // If the password parameter is a regular file, it reads the password from the file.
 // If the password parameter is an executable, it runs the executable to get the password.
 // Parameters:
-//   - passParam: Path to password file or executable
-//   - cfg: Configuration object containing password file or executable paths
+//   - passParam: The password parameter provided via command-line flag.
+//   - cfg: The configuration object containing default paths and executables.
+//   - kdbpassenv: The environment variable for the password, if set.
+//   - promptFunc: Optional function to prompt for password if no file/executable is provided.
 //
 // Returns:
-//   - string: The resolved password
-//   - error: Any error encountered during password retrieval
-//
-// PasswordPromptFunc defines a function type for prompting the user for a password.
-type PasswordPromptFunc func() (string, error)
-
-// ResolvePassword retrieves the database password from a file, executable, or prompt.
-// The promptFunc parameter is optional; if nil, getPasswordFromPrompt is used.
+//   - string: The resolved password.
+//   - error: Any error encountered during resolution.
 func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string, promptFunc ...PasswordPromptFunc) (string, error) <span class="cov8" title="1">{
 
         passfile := ""
@@ -829,11 +1162,12 @@ func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string, pr
                 <span class="cov0" title="0">return getPasswordFromPrompt()</span>
         }
         // Resolve environment variables in passfile
-        <span class="cov8" title="1">passfile = os.ExpandEnv(passfile)
-        debug.Log(passfile)
+        // passfile = os.ExpandEnv(passfile)
+        <span class="cov8" title="1">debug.Log("PassFile: %v", passfile)
 
         // Check if passfile is an executable in $PATH
         if execPath, err := exec.LookPath(passfile); err == nil </span><span class="cov8" title="1">{
+                debug.Log("passfile: %v is an executable: %v", passfile, execPath)
                 passfile = execPath
         }</span>
         <span class="cov8" title="1">info, err := os.Stat(passfile)
@@ -841,7 +1175,7 @@ func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string, pr
                 debug.Log("passfile: %v Error: %v", passfile, err.Error())
                 return "", fmt.Errorf("password must be provided via file or executable")
         }</span>
-        <span class="cov8" title="1">debug.Log("%v", info)
+        <span class="cov8" title="1">debug.Log("%+v", info)
 
         if info.Mode()&amp;os.ModeNamedPipe != 0 </span><span class="cov0" title="0">{
                 // Read password from process substitution
@@ -888,11 +1222,14 @@ func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string, pr
 // leading or trailing whitespace, and returns the password as a string.
 // If an error occurs while reading the password, it returns an empty string
 // and the encountered error.
+// Returns:
+//   - string: The entered password, or an empty string if an error occurs.
+//   - error: An error if one occurs while reading the password.
 func getPasswordFromPrompt() (string, error) <span class="cov0" title="0">{
         // If no valid file or executable is found, prompt the user for the password
         fmt.Print("Enter password: ")
         var password string
-        passwordBytes, err := terminal.ReadPassword(int(syscall.Stdin))
+        passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
         if err != nil </span>{<span class="cov0" title="0">
         }</span>
         <span class="cov0" title="0">password = strings.TrimSpace(string(passwordBytes))
@@ -904,19 +1241,14 @@ func getPasswordFromPrompt() (string, error) <span class="cov0" title="0">{
         <span class="cov0" title="0">return "", err</span>
 }
 
-// ResolveDatabasePath determines the path to the KeePass database file.
-// It checks the following sources in order of precedence:
-// 1. The provided flagPath argument. If it is not empty, it is returned.
-// 2. The environment variable "KPASSCLI_KDBPATH". If it is set, its value is returned.
-// 3. The DatabasePath field in the provided config.Config object. If it is not nil and its DatabasePath field is not empty, it is returned.
-// If none of these sources provide a path, an empty string is returned.
+// ResolveDatabasePath returns the KeePass database path based on flag, environment, or config.
 //
 // Parameters:
-// - flagPath: A string representing the path provided via a command-line flag.
-// - cfg: A pointer to a config.Config object that may contain the database path.
+//   - flagPath: The path provided via command-line flag.
+//   - cfg: The configuration object containing a default database path.
 //
 // Returns:
-// A string representing the resolved database path, or an empty string if no path is found.
+//   - string: The resolved database path, or empty string if not found.
 func ResolveDatabasePath(flagPath string, cfg *config.Config) string <span class="cov8" title="1">{
         if flagPath != "" </span><span class="cov8" title="1">{
                 return flagPath
@@ -929,45 +1261,107 @@ func ResolveDatabasePath(flagPath string, cfg *config.Config) string <span class
         }</span>
         <span class="cov8" title="1">return ""</span>
 }
+
+// GetAllFields finds a specific entry by path and displays all its fields.
+//
+// Parameters:
+//   - db: The KeePass database to search.
+//   - config: The configuration object for output formatting.
+//   - itemPath: The path of the entry to display.
+//
+// Returns:
+//   - error: Any error encountered during the operation.
+func GetAllFields(db *gokeepasslib.Database, config *config.Config, itemPath string) error <span class="cov0" title="0">{
+        finder := search.NewFinder(db)
+        // Rename the variable to 'results' to better reflect its type ([]search.Result)
+        results, err := finder.Find(itemPath)
+        if err != nil </span><span class="cov0" title="0">{
+                // Wrap the error for better context
+                return fmt.Errorf("error finding entry '%s': %w", itemPath, err)
+        }</span>
+
+        // Handle cases based on the number of results found
+        <span class="cov0" title="0">if len(results) == 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("entry not found: %s", itemPath)
+        }</span>
+
+        <span class="cov0" title="0">if len(results) &gt; 1 </span><span class="cov0" title="0">{
+                // More than one entry found, which is ambiguous for showing all fields.
+                // You might want to list the paths found instead.
+                var foundPaths []string
+                for _, res := range results </span><span class="cov0" title="0">{
+                        foundPaths = append(foundPaths, res.Path)
+                }</span>
+                <span class="cov0" title="0">return fmt.Errorf("multiple entries found for '%s', please specify a unique path: %s", itemPath, strings.Join(foundPaths, ", "))</span>
+        }
+
+        // Exactly one result found. Access the Entry field from the first element.
+        // The 'Entry' field within search.Result is the *gokeepasslib.Entry we need.
+        <span class="cov0" title="0">singleEntry := results[0].Entry
+
+        // It's good practice to check if the Entry pointer is nil, although Find should ideally populate it.
+        if singleEntry == nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("found result for '%s', but entry data is unexpectedly nil", itemPath)
+        }</span>
+
+        // Now pass the correct type (*gokeepasslib.Entry) to ShowAllFields
+        <span class="cov0" title="0">output.ShowAllFields(singleEntry, *config)
+        return nil</span>
+}
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package output
+		<pre class="file" id="file10" style="display: none">package output
 
 import (
+        "encoding/json"
         "fmt"
+        "os"
+        "time"
+
         // Hinzugefügt für Debug-Logs
 
+        "github.com/tobischo/gokeepasslib/v3"
         "golang.design/x/clipboard"
 
+        "kpasscli/src/config"
         "kpasscli/src/debug"
 )
 
-type Type string
+type OutputChannel string
 
 const (
-        Clipboard Type = "clipboard"
-        Stdout    Type = "stdout"
+        Clipboard  OutputChannel = "clipboard"
+        Stdout     OutputChannel = "stdout"
+        lineBreak                = "----------------------------------------"
+        timeFormat               = "2006-01-02 15:04:05"
 )
-
 
 // Handler is an interface for outputting values.
 type Handler interface {
         Output(string) error
 }
 
+// OutputType defines the type of output (clipboard or stdout)
+type OutputType string
+
+const (
+        ClipboardType OutputType = "clipboard"
+        StdoutType    OutputType = "stdout"
+)
+
 // stdHandler is the default implementation of Handler.
 type stdHandler struct {
-        outputType Type
+        outputType OutputType
 }
 
 // NewHandler creates a new Handler instance with the specified output type.
+//
 // Parameters:
-//   - outputType: The type of output (clipboard or stdout).
+//   - outputType: The OutputType specifying how output should be handled (clipboard or stdout).
 //
 // Returns:
-//   - *Handler: A new Handler instance.
-// NewHandler creates a new Handler instance with the specified output type.
-func NewHandler(outputType Type) Handler <span class="cov8" title="1">{
+//   - Handler: A new Handler instance for the specified output type.
+func NewHandler(outputType OutputType) Handler <span class="cov8" title="1">{
         return &amp;stdHandler{outputType: outputType}
 }</span>
 
@@ -980,9 +1374,9 @@ func NewHandler(outputType Type) Handler <span class="cov8" title="1">{
 func (h *stdHandler) Output(value string) error <span class="cov8" title="1">{
         debug.Log("Outputting value: %s", value)
         switch h.outputType </span>{
-        case Clipboard:<span class="cov8" title="1">
+        case ClipboardType:<span class="cov8" title="1">
                 return h.toClipboard(value)</span>
-        case Stdout:<span class="cov8" title="1">
+        case StdoutType:<span class="cov8" title="1">
                 return h.toStdout(value)</span>
         default:<span class="cov8" title="1">
                 return fmt.Errorf("unknown output type: %s", h.outputType)</span>
@@ -1017,22 +1411,202 @@ func (h *stdHandler) toStdout(value string) error <span class="cov8" title="1">{
 }</span>
 
 // IsValidType checks if the provided output type is valid.
+//
 // Parameters:
-//   - outputType: The output type to check.
+//   - outputType: The output type to check (string).
 //
 // Returns:
 //   - bool: True if the output type is valid, false otherwise.
 func IsValidType(outputType string) bool <span class="cov8" title="1">{
-        switch Type(outputType) </span>{
-        case Clipboard, Stdout:<span class="cov8" title="1">
+        switch OutputType(outputType) </span>{
+        case ClipboardType, StdoutType:<span class="cov8" title="1">
                 return true</span>
         default:<span class="cov8" title="1">
                 return false</span>
         }
 }
+
+// ShowAllFields displays all fields of a KeePass entry
+// in a human-readable format.
+// Parameters:
+//   - entry: The KeePass entry to display.
+//   - config: The configuration object containing output format settings.
+//
+// Returns:
+//   - error: Any error encountered during the operation.
+func ShowAllFields(entry *gokeepasslib.Entry, config config.Config) <span class="cov8" title="1">{
+        if entry == nil </span><span class="cov0" title="0">{
+                return
+        }</span>
+
+        <span class="cov8" title="1">if config.OutputFormat == "json" </span><span class="cov8" title="1">{
+                showAllFieldsJson(entry)
+                return
+        }</span>
+
+        <span class="cov8" title="1">fmt.Println(lineBreak)
+        fmt.Printf("Entry Details:\n")
+        fmt.Println(lineBreak)
+
+        // Standard fields
+        printNonEmptyValue("Title", getValue(entry, "Title"))
+        printNonEmptyValue("Username", getValue(entry, "UserName"))
+        printNonEmptyValue("URL", getValue(entry, "URL"))
+        printNonEmptyValue("Notes", getValue(entry, "Notes"))
+
+        // Additional fields
+        hasAdditionalFields := false
+        for _, v := range entry.Values </span><span class="cov8" title="1">{
+                if isAdditionalField(v.Key) &amp;&amp; v.Value.Content != "" </span><span class="cov8" title="1">{
+                        if !hasAdditionalFields </span><span class="cov8" title="1">{
+                                fmt.Println(lineBreak)
+                                fmt.Println("Additional Fields:")
+                                hasAdditionalFields = true
+                        }</span>
+                        <span class="cov8" title="1">printNonEmptyValue(v.Key, v.Value.Content)</span>
+                }
+        }
+
+        // Metadata
+        <span class="cov8" title="1">fmt.Println(lineBreak)
+        fmt.Println("Metadata:")
+        printNonEmptyValue("Created", formatTime(entry.Times.CreationTime.Time))
+        printNonEmptyValue("Modified", formatTime(entry.Times.LastModificationTime.Time))
+        printNonEmptyValue("Accessed", formatTime(entry.Times.LastAccessTime.Time))
+        fmt.Println(lineBreak)</span>
+}
+
+// Helper functions
+// getValue retrieves the value for a given key from the entry's values.
+// Parameters:
+//   - entry: The KeePass entry to search.
+//   - key: The key for which to retrieve the value.
+//
+// Returns:
+//   - string: The value associated with the key, or an empty string if not found
+func getValue(entry *gokeepasslib.Entry, key string) string <span class="cov8" title="1">{
+        for _, v := range entry.Values </span><span class="cov8" title="1">{
+                if v.Key == key </span><span class="cov8" title="1">{
+                        return v.Value.Content
+                }</span>
+        }
+        <span class="cov8" title="1">return ""</span>
+}
+
+// printNonEmptyValue prints a key-value pair if the value is not empty.
+// Parameters:
+//   - key: The key to print.
+//   - value: The value to print.
+func printNonEmptyValue(key, value string) <span class="cov8" title="1">{
+        if value != "" </span><span class="cov8" title="1">{
+                fmt.Printf("%s: %s\n", key, value)
+        }</span>
+}
+
+// formatTime formats a time.Time object into a string using the predefined time format.
+// Parameters:
+//   - t: The time.Time object to format.
+//
+// Returns:
+//   - string: The formatted time string.
+func formatTime(t time.Time) string <span class="cov8" title="1">{
+        return t.Format(timeFormat)
+}</span>
+
+// isAdditionalField checks if a key is considered an additional field.
+// Parameters:
+//   - key: The key to check.
+//
+// Returns:
+//   - bool: True if the key is an additional field, false otherwise.
+func isAdditionalField(key string) bool <span class="cov8" title="1">{
+        standardFields := map[string]bool{
+                "Title":    true,
+                "UserName": true,
+                "URL":      true,
+                "Notes":    true,
+                "Password": true,
+        }
+        return !standardFields[key]
+}</span>
+
+// showAllFieldsJson outputs all fields of a KeePass entry in JSON format.
+// Parameters:
+//   - entry: The KeePass entry to display.
+func showAllFieldsJson(entry *gokeepasslib.Entry) <span class="cov8" title="1">{
+        type entryData struct {
+                Title            string            `json:"title"`
+                Username         string            `json:"username"`
+                URL              string            `json:"url"`
+                Notes            string            `json:"notes"`
+                AdditionalFields map[string]string `json:"additional_fields,omitempty"`
+                Metadata         struct {
+                        Created  string `json:"created"`
+                        Modified string `json:"modified"`
+                        Accessed string `json:"accessed"`
+                } `json:"metadata"`
+        }
+
+        data := entryData{
+                Title:            getValue(entry, "Title"),
+                Username:         getValue(entry, "UserName"),
+                URL:              getValue(entry, "URL"),
+                Notes:            getValue(entry, "Notes"),
+                AdditionalFields: make(map[string]string),
+        }
+
+        // Fill additional fields
+        for _, v := range entry.Values </span><span class="cov8" title="1">{
+                if isAdditionalField(v.Key) &amp;&amp; v.Value.Content != "" </span><span class="cov8" title="1">{
+                        data.AdditionalFields[v.Key] = v.Value.Content
+                }</span>
+        }
+
+        // Fill metadata
+        <span class="cov8" title="1">data.Metadata.Created = formatTime(entry.Times.CreationTime.Time)
+        data.Metadata.Modified = formatTime(entry.Times.LastModificationTime.Time)
+        data.Metadata.Accessed = formatTime(entry.Times.LastAccessTime.Time)
+
+        jsonData, err := json.MarshalIndent(data, "", "  ")
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("Error creating JSON output: %v\n", err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">fmt.Println(string(jsonData))</span>
+}
+
+// ResolveOutputType determines the output type based on the provided flag, environment variable, or configuration.
+//
+// Order of precedence:
+//  1. If the flagOut parameter is not empty, it returns the corresponding output type.
+//  2. If the environment variable "KPASSCLI_OUT" is set and valid, it returns the corresponding output type.
+//  3. If the cfg parameter is not nil and cfg.DefaultOutput is not empty, it returns the corresponding output type.
+//  4. If none of the above conditions are met, it defaults to output.StdoutType.
+//
+// Parameters:
+//   - flagOut: A string representing the output type specified by a flag.
+//   - cfg: A pointer to a config.Config struct that may contain a default output type.
+//
+// Returns:
+//   - OutputType: The resolved output type based on the provided inputs.
+func ResolveOutputType(flagOut string, cfg *config.Config) OutputType <span class="cov0" title="0">{
+        if flagOut != "" </span><span class="cov0" title="0">{
+                return OutputType(flagOut)
+        }</span>
+        <span class="cov0" title="0">if kpcliout := os.Getenv("KPASSCLI_OUT"); kpcliout != "" </span><span class="cov0" title="0">{
+                if IsValidType(kpcliout) </span><span class="cov0" title="0">{
+                        return OutputType(kpcliout)
+                }</span>
+        }
+        <span class="cov0" title="0">if cfg != nil &amp;&amp; cfg.DefaultOutput != "" </span><span class="cov0" title="0">{
+                return OutputType(cfg.DefaultOutput)
+        }</span>
+        <span class="cov0" title="0">return StdoutType</span>
+}
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package search
+		<pre class="file" id="file11" style="display: none">package search
 
 import (
         "fmt" // Hinzugefügt für Debug-Logs
@@ -1046,6 +1620,9 @@ import (
 )
 
 // FinderInterface abstracts the Find method for testability
+// FinderInterface defines the interface for searching entries in a KeePass database.
+// It provides a method to find entries based on a query string.
+// This interface allows for different implementations of search logic, making it easier to test and extend functionality
 type FinderInterface interface {
         Find(query string) ([]Result, error)
         // Optionally, add Options field if needed for tests
@@ -1058,14 +1635,15 @@ type Result struct {
         Entry *gokeepasslib.Entry
 }
 
-var verify bool
-
-// Enable sets the debug logging flag to true.
-func EnableVerify() <span class="cov8" title="1">{
-        verify = true
-}</span>
-
 // GetField returns the value of the specified field from the entry
+// GetField retrieves the value of a specified field from the entry.
+// It searches through the entry's values and returns the content of the field if found.
+// If the field is not found, it returns an error indicating that the field was not found.
+// Parameters:
+//   - fieldName: The name of the field to retrieve.
+//
+// Returns:
+//   - The content of the field if found.
 func (r *Result) GetField(fieldName string) (string, error) <span class="cov8" title="1">{
         for _, v := range r.Entry.Values </span><span class="cov8" title="1">{
                 if strings.EqualFold(v.Key, fieldName) </span><span class="cov8" title="1">{
@@ -1074,6 +1652,16 @@ func (r *Result) GetField(fieldName string) (string, error) <span class="cov8" t
         }
         <span class="cov8" title="1">return "", fmt.Errorf("field '%s' not found", fieldName)</span>
 }
+
+var verify bool
+
+// EnableVerify enables verification logging for search operations.
+//
+// This function sets the internal verify flag to true, enabling additional debug or verification output
+// during search operations. Useful for debugging or testing.
+func EnableVerify() <span class="cov8" title="1">{
+        verify = true
+}</span>
 
 // SearchOptions defines the search behavior
 type SearchOptions struct {
@@ -1087,7 +1675,13 @@ type Finder struct {
         Options SearchOptions // Add Options field to Finder struct
 }
 
-// NewFinder creates a new Finder instance with default options
+// NewFinder creates a new Finder instance with default search options.
+//
+// Parameters:
+//   - db: The KeePass database to search.
+//
+// Returns:
+//   - *Finder: A new Finder instance ready for searching.
 func NewFinder(db *gokeepasslib.Database) *Finder <span class="cov8" title="1">{
         return &amp;Finder{
                 db:      db,
@@ -1095,7 +1689,10 @@ func NewFinder(db *gokeepasslib.Database) *Finder <span class="cov8" title="1">{
         }
 }</span>
 
-// DefaultSearchOptions returns the default search options
+// DefaultSearchOptions returns the default search options for Finder.
+//
+// Returns:
+//   - SearchOptions: The default search options (case-insensitive, partial match).
 func DefaultSearchOptions() SearchOptions <span class="cov8" title="1">{
         return SearchOptions{
                 CaseSensitive: false, // Case-insensitive by default
@@ -1103,15 +1700,14 @@ func DefaultSearchOptions() SearchOptions <span class="cov8" title="1">{
         }
 }</span>
 
-// Find searches for entries in the KeePass database.
-// Parameters:
+// Find searches for entries in the KeePass database based on the provided query string.
 //
-//        query: Search query, can be absolute path, relative path, or entry name
+// Parameters:
+//   - query: Search query, can be absolute path, relative path, or entry name.
 //
 // Returns:
-//
-//        []Result: Array of matching entries with their paths
-//        error: Any error encountered during search
+//   - []Result: Array of matching entries with their paths.
+//   - error: Any error encountered during search.
 func (f *Finder) Find(query string) ([]Result, error) <span class="cov8" title="1">{
         debug.Log("Starting search for query: %s", query) // Debug-Log hinzugefügt
         var results []Result
@@ -1148,14 +1744,14 @@ func (f *Finder) Find(query string) ([]Result, error) <span class="cov8" title="
 }
 
 // findByAbsolutePath finds an entry using an absolute path.
-// Parameters:
+// It navigates through the groups in the database to locate the entry.
 //
-//        path: Absolute path starting with "/"
+// Parameters:
+//   - path: Absolute path starting with "/"
 //
 // Returns:
-//
-//        *gokeepasslib.Entry: The found entry or nil
-//        error: Any error encountered during search
+//   - *gokeepasslib.Entry: The found entry or nil
+//   - error: Any error encountered during search
 func (f *Finder) findByAbsolutePath(path string) (*gokeepasslib.Entry, error) <span class="cov8" title="1">{
         debug.Log("Searching by absolute path: %s", path) // Debug-Log hinzugefügt
         parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
@@ -1203,14 +1799,14 @@ func (f *Finder) findByAbsolutePath(path string) (*gokeepasslib.Entry, error) <s
 
 // findBySubpath searches for entries matching a relative path pattern.
 // The search is performed recursively through all groups in the database.
-// Parameters:
+// It allows for partial matches within the specified path.
 //
-//        query: Relative path pattern (e.g., "Banking/Account")
+// Parameters:
+//   - query: Relative path pattern (e.g., "Banking/Account")
 //
 // Returns:
-//
-//        []Result: Array of matching entries with their full paths
-//        error: Any error encountered during search
+//   - []Result: Array of matching entries with their full paths
+//   - error: Any error encountered during search
 func (f *Finder) findBySubpath(query string) ([]Result, error) <span class="cov8" title="1">{
         debug.Log("Searching by subpath: %s", query) // Debug-Log hinzugefügt
         parts := strings.Split(query, "/")
@@ -1248,14 +1844,17 @@ func (f *Finder) findBySubpath(query string) ([]Result, error) <span class="cov8
 }
 
 // searchGroupForSubpath recursively searches through groups for matching paths.
-// Parameters:
+// It checks if the current group matches the next path component and searches its entries.
+// This function builds the full path for each group and checks if it matches the target name.
+// It allows for partial matches within the specified path.
 //
-//        group: Current group being searched
-//        currentPath: Full path to current group
-//        searchPath: Remaining path components to match
-//        targetName: Name of the entry to find
-//        results: Slice to collect matching results
-//        opts: Search options controlling matching behavior
+// Parameters:
+//   - group: Current group being searched
+//   - currentPath: Full path to current group
+//   - searchPath: Remaining path components to match
+//   - targetName: Name of the entry to find
+//   - results: Slice to collect matching results
+//   - opts: Search options controlling matching behavior
 func (f *Finder) searchGroupForSubpath(
         group *gokeepasslib.Group,
         currentPath string,
@@ -1409,16 +2008,14 @@ func (f *Finder) findByName(query string) ([]Result, error) <span class="cov8" t
 // It appends the results to the provided results slice.
 //
 // Parameters:
-//
-//        group - The group to search within.
-//        currentPath - The current path of the group being searched.
-//        targetName - The name to search for within the group's entries.
-//        results - A pointer to a slice where the search results will be appended.
-//        opts - Options for customizing the search behavior.
+//   - group - The group to search within.
+//   - currentPath - The current path of the group being searched.
+//   - targetName - The name to search for within the group's entries.
+//   - results - A pointer to a slice where the search results will be appended.
+//   - opts - Options for customizing the search behavior.
 //
 // Returns:
-//
-//        An error if the search encounters an issue, otherwise nil.
+//   - An error if the search encounters an issue, otherwise nil.
 func (f *Finder) searchGroupForName(
         group *gokeepasslib.Group,
         currentPath string,

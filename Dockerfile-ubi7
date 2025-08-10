@@ -15,9 +15,10 @@ RUN yum install -y \
 
 # Install Go manually
 ENV GO_VERSION=1.24.2
-RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz && \
-    rm go${GO_VERSION}.linux-amd64.tar.gz
+RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz \
+ && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz \
+ && rm go${GO_VERSION}.linux-amd64.tar.gz \
+ && mkdir -p /app
     
 ENV PATH="/usr/local/go/bin:${PATH}"
 
@@ -25,7 +26,6 @@ ENV PATH="/usr/local/go/bin:${PATH}"
 WORKDIR /app
 # Copy the source code into the container
 COPY . .
-RUN rm -rf /app/go
 RUN mkdir -p /app && chown -R 1000:1000 /app \
     && rm -rf /app/go
 
@@ -35,15 +35,17 @@ ENV HOME=/app \
     CGO_CFLAGS="-std=c99 -Wno-implicit-function-declaration" \
     CGO_ENABLED=0 \
     GOCACHE="/tmp/go-build-cache" \
-    PATH="$PATH:/app/dist"
+    PATH="$PATH:/app/dist" \
+    GO111MODULE=on
     
 RUN mkdir -p /app/.config/kpasscli \
- && cp config.yaml /app/.config/kpasscli/config.yaml
+ && cp config-lin.yaml /app/.config/kpasscli/config.yaml
 
-RUN rm -f go.mod go.sum \
- && go mod init kpasscli \
- && go mod tidy -go=${GO_VERSION}\
- && go build -v -o dist
+RUN rm -rf go.mod go.sum 
+RUN go mod init kpasscli
+RUN go mod tidy -go=${GO_VERSION}
+RUN go build -v -o dist/kpasscli
+RUN dist/kpasscli -h
 
 # Set the entrypoint to the kpasscli binary
 ENTRYPOINT ["/app/dist/kpasscli"]

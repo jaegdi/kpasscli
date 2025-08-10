@@ -12,6 +12,9 @@ import (
 )
 
 // FinderInterface abstracts the Find method for testability
+// FinderInterface defines the interface for searching entries in a KeePass database.
+// It provides a method to find entries based on a query string.
+// This interface allows for different implementations of search logic, making it easier to test and extend functionality
 type FinderInterface interface {
 	Find(query string) ([]Result, error)
 	// Optionally, add Options field if needed for tests
@@ -25,6 +28,14 @@ type Result struct {
 }
 
 // GetField returns the value of the specified field from the entry
+// GetField retrieves the value of a specified field from the entry.
+// It searches through the entry's values and returns the content of the field if found.
+// If the field is not found, it returns an error indicating that the field was not found.
+// Parameters:
+//   - fieldName: The name of the field to retrieve.
+//
+// Returns:
+//   - The content of the field if found.
 func (r *Result) GetField(fieldName string) (string, error) {
 	for _, v := range r.Entry.Values {
 		if strings.EqualFold(v.Key, fieldName) {
@@ -36,7 +47,10 @@ func (r *Result) GetField(fieldName string) (string, error) {
 
 var verify bool
 
-// Enable sets the debug logging flag to true.
+// EnableVerify enables verification logging for search operations.
+//
+// This function sets the internal verify flag to true, enabling additional debug or verification output
+// during search operations. Useful for debugging or testing.
 func EnableVerify() {
 	verify = true
 }
@@ -53,7 +67,13 @@ type Finder struct {
 	Options SearchOptions // Add Options field to Finder struct
 }
 
-// NewFinder creates a new Finder instance with default options
+// NewFinder creates a new Finder instance with default search options.
+//
+// Parameters:
+//   - db: The KeePass database to search.
+//
+// Returns:
+//   - *Finder: A new Finder instance ready for searching.
 func NewFinder(db *gokeepasslib.Database) *Finder {
 	return &Finder{
 		db:      db,
@@ -61,7 +81,10 @@ func NewFinder(db *gokeepasslib.Database) *Finder {
 	}
 }
 
-// DefaultSearchOptions returns the default search options
+// DefaultSearchOptions returns the default search options for Finder.
+//
+// Returns:
+//   - SearchOptions: The default search options (case-insensitive, partial match).
 func DefaultSearchOptions() SearchOptions {
 	return SearchOptions{
 		CaseSensitive: false, // Case-insensitive by default
@@ -69,15 +92,14 @@ func DefaultSearchOptions() SearchOptions {
 	}
 }
 
-// Find searches for entries in the KeePass database.
-// Parameters:
+// Find searches for entries in the KeePass database based on the provided query string.
 //
-//	query: Search query, can be absolute path, relative path, or entry name
+// Parameters:
+//   - query: Search query, can be absolute path, relative path, or entry name.
 //
 // Returns:
-//
-//	[]Result: Array of matching entries with their paths
-//	error: Any error encountered during search
+//   - []Result: Array of matching entries with their paths.
+//   - error: Any error encountered during search.
 func (f *Finder) Find(query string) ([]Result, error) {
 	debug.Log("Starting search for query: %s", query) // Debug-Log hinzugefügt
 	var results []Result
@@ -114,14 +136,14 @@ func (f *Finder) Find(query string) ([]Result, error) {
 }
 
 // findByAbsolutePath finds an entry using an absolute path.
-// Parameters:
+// It navigates through the groups in the database to locate the entry.
 //
-//	path: Absolute path starting with "/"
+// Parameters:
+//   - path: Absolute path starting with "/"
 //
 // Returns:
-//
-//	*gokeepasslib.Entry: The found entry or nil
-//	error: Any error encountered during search
+//   - *gokeepasslib.Entry: The found entry or nil
+//   - error: Any error encountered during search
 func (f *Finder) findByAbsolutePath(path string) (*gokeepasslib.Entry, error) {
 	debug.Log("Searching by absolute path: %s", path) // Debug-Log hinzugefügt
 	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
@@ -169,14 +191,14 @@ func (f *Finder) findByAbsolutePath(path string) (*gokeepasslib.Entry, error) {
 
 // findBySubpath searches for entries matching a relative path pattern.
 // The search is performed recursively through all groups in the database.
-// Parameters:
+// It allows for partial matches within the specified path.
 //
-//	query: Relative path pattern (e.g., "Banking/Account")
+// Parameters:
+//   - query: Relative path pattern (e.g., "Banking/Account")
 //
 // Returns:
-//
-//	[]Result: Array of matching entries with their full paths
-//	error: Any error encountered during search
+//   - []Result: Array of matching entries with their full paths
+//   - error: Any error encountered during search
 func (f *Finder) findBySubpath(query string) ([]Result, error) {
 	debug.Log("Searching by subpath: %s", query) // Debug-Log hinzugefügt
 	parts := strings.Split(query, "/")
@@ -214,14 +236,17 @@ func (f *Finder) findBySubpath(query string) ([]Result, error) {
 }
 
 // searchGroupForSubpath recursively searches through groups for matching paths.
-// Parameters:
+// It checks if the current group matches the next path component and searches its entries.
+// This function builds the full path for each group and checks if it matches the target name.
+// It allows for partial matches within the specified path.
 //
-//	group: Current group being searched
-//	currentPath: Full path to current group
-//	searchPath: Remaining path components to match
-//	targetName: Name of the entry to find
-//	results: Slice to collect matching results
-//	opts: Search options controlling matching behavior
+// Parameters:
+//   - group: Current group being searched
+//   - currentPath: Full path to current group
+//   - searchPath: Remaining path components to match
+//   - targetName: Name of the entry to find
+//   - results: Slice to collect matching results
+//   - opts: Search options controlling matching behavior
 func (f *Finder) searchGroupForSubpath(
 	group *gokeepasslib.Group,
 	currentPath string,
@@ -375,16 +400,14 @@ func (f *Finder) findByName(query string) ([]Result, error) {
 // It appends the results to the provided results slice.
 //
 // Parameters:
-//
-//	group - The group to search within.
-//	currentPath - The current path of the group being searched.
-//	targetName - The name to search for within the group's entries.
-//	results - A pointer to a slice where the search results will be appended.
-//	opts - Options for customizing the search behavior.
+//   - group - The group to search within.
+//   - currentPath - The current path of the group being searched.
+//   - targetName - The name to search for within the group's entries.
+//   - results - A pointer to a slice where the search results will be appended.
+//   - opts - Options for customizing the search behavior.
 //
 // Returns:
-//
-//	An error if the search encounters an issue, otherwise nil.
+//   - An error if the search encounters an issue, otherwise nil.
 func (f *Finder) searchGroupForName(
 	group *gokeepasslib.Group,
 	currentPath string,
