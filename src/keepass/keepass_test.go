@@ -2,10 +2,9 @@ package keepass
 
 import (
 	"io/ioutil"
+	"kpasscli/src/config"
 	"os"
 	"testing"
-
-	"kpasscli/src/config"
 )
 
 func TestOpenDatabase_FileNotFound(t *testing.T) {
@@ -144,5 +143,42 @@ func TestResolvePassword_FromExecutable(t *testing.T) {
 	}
 	if pass != "execpass" {
 		t.Errorf("expected 'execpass', got '%v'", pass)
+	}
+}
+
+func Test_getPasswordFromPrompt_success(t *testing.T) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create pipe: %v", err)
+	}
+	input := []byte("secret\n")
+	go func() {
+		w.Write(input)
+		w.Close()
+	}()
+
+	pw, err := getPasswordFromPromptWithReader(r, -1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if pw != "secret" {
+		t.Errorf("expected 'secret', got '%v'", pw)
+	}
+}
+
+func Test_getPasswordFromPrompt_empty(t *testing.T) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create pipe: %v", err)
+	}
+	input := []byte("\n")
+	go func() {
+		w.Write(input)
+		w.Close()
+	}()
+
+	pw, _ := getPasswordFromPromptWithReader(r, -1)
+	if pw != "" {
+		t.Errorf("expected empty password, got '%v'", pw)
 	}
 }

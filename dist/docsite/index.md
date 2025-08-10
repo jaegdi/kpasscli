@@ -301,6 +301,7 @@ import "kpasscli/src/keepass"
 ## Index
 
 - [func GetAllFields\(db \*gokeepasslib.Database, config \*config.Config, itemPath string\) error](<#GetAllFields>)
+- [func GetAllFieldsWithFinder\(db \*gokeepasslib.Database, config \*config.Config, itemPath string, finder search.FinderInterface, showAllFields func\(\*gokeepasslib.Entry, config.Config\)\) error](<#GetAllFieldsWithFinder>)
 - [func OpenDatabase\(path string, password string\) \(\*gokeepasslib.Database, error\)](<#OpenDatabase>)
 - [func ResolveDatabasePath\(flagPath string, cfg \*config.Config\) string](<#ResolveDatabasePath>)
 - [func ResolvePassword\(passParam string, cfg \*config.Config, kdbpassenv string, promptFunc ...PasswordPromptFunc\) \(string, error\)](<#ResolvePassword>)
@@ -308,7 +309,7 @@ import "kpasscli/src/keepass"
 
 
 <a name="GetAllFields"></a>
-## func [GetAllFields](<https://github.com/jaegdi/kpasscli/blob/master/src/keepass/keepass.go#L203>)
+## func [GetAllFields](<https://github.com/jaegdi/kpasscli/blob/master/src/keepass/keepass.go#L231>)
 
 ```go
 func GetAllFields(db *gokeepasslib.Database, config *config.Config, itemPath string) error
@@ -326,8 +327,29 @@ Returns:
 
 - error: Any error encountered during the operation.
 
+GetAllFields finds a specific entry by path and displays all its fields.
+
+Parameters:
+
+- db: The KeePass database to search.
+- config: The configuration object for output formatting.
+- itemPath: The path of the entry to display.
+
+Returns:
+
+- error: Any error encountered during the operation.
+
+<a name="GetAllFieldsWithFinder"></a>
+## func [GetAllFieldsWithFinder](<https://github.com/jaegdi/kpasscli/blob/master/src/keepass/keepass.go#L237-L243>)
+
+```go
+func GetAllFieldsWithFinder(db *gokeepasslib.Database, config *config.Config, itemPath string, finder search.FinderInterface, showAllFields func(*gokeepasslib.Entry, config.Config)) error
+```
+
+GetAllFieldsWithFinder is like GetAllFields but allows dependency injection for testing. If finder is nil, uses search.NewFinder\(db\). If showAllFields is nil, uses output.ShowAllFields.
+
 <a name="OpenDatabase"></a>
-## func [OpenDatabase](<https://github.com/jaegdi/kpasscli/blob/master/src/keepass/keepass.go#L29>)
+## func [OpenDatabase](<https://github.com/jaegdi/kpasscli/blob/master/src/keepass/keepass.go#L31>)
 
 ```go
 func OpenDatabase(path string, password string) (*gokeepasslib.Database, error)
@@ -348,7 +370,7 @@ error: Any error encountered during opening or decoding
 ```
 
 <a name="ResolveDatabasePath"></a>
-## func [ResolveDatabasePath](<https://github.com/jaegdi/kpasscli/blob/master/src/keepass/keepass.go#L181>)
+## func [ResolveDatabasePath](<https://github.com/jaegdi/kpasscli/blob/master/src/keepass/keepass.go#L199>)
 
 ```go
 func ResolveDatabasePath(flagPath string, cfg *config.Config) string
@@ -366,7 +388,7 @@ Returns:
 - string: The resolved database path, or empty string if not found.
 
 <a name="ResolvePassword"></a>
-## func [ResolvePassword](<https://github.com/jaegdi/kpasscli/blob/master/src/keepass/keepass.go#L75>)
+## func [ResolvePassword](<https://github.com/jaegdi/kpasscli/blob/master/src/keepass/keepass.go#L77>)
 
 ```go
 func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string, promptFunc ...PasswordPromptFunc) (string, error)
@@ -385,7 +407,7 @@ Returns:
 - error: Any error encountered during resolution.
 
 <a name="PasswordPromptFunc"></a>
-## type [PasswordPromptFunc](<https://github.com/jaegdi/kpasscli/blob/master/src/keepass/keepass.go#L56>)
+## type [PasswordPromptFunc](<https://github.com/jaegdi/kpasscli/blob/master/src/keepass/keepass.go#L58>)
 
 PasswordPromptFunc defines a function type for prompting the user for a password.
 

@@ -1,7 +1,9 @@
 package keepass
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -154,12 +156,23 @@ func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string, pr
 // Returns:
 //   - string: The entered password, or an empty string if an error occurs.
 //   - error: An error if one occurs while reading the password.
-func getPasswordFromPrompt() (string, error) {
-	// If no valid file or executable is found, prompt the user for the password
+
+// getPasswordFromPromptWithReader allows injection of input and fd for testability.
+func getPasswordFromPromptWithReader(r io.Reader, fd int) (string, error) {
 	fmt.Print("Enter password: ")
 	var password string
-	passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
+	// If fd >= 0, use term.ReadPassword; else, read from r (for tests)
+	var passwordBytes []byte
+	var err error
+	if fd >= 0 {
+		passwordBytes, err = term.ReadPassword(fd)
+	} else {
+		// For tests: read a line from r
+		reader := bufio.NewReader(r)
+		passwordBytes, err = reader.ReadBytes('\n')
+	}
 	if err != nil {
+		return "", err
 	}
 	password = strings.TrimSpace(string(passwordBytes))
 	fmt.Println()
@@ -168,6 +181,11 @@ func getPasswordFromPrompt() (string, error) {
 		return password, nil
 	}
 	return "", err
+}
+
+// getPasswordFromPrompt is the production version, using os.Stdin and syscall.Stdin
+func getPasswordFromPrompt() (string, error) {
+	return getPasswordFromPromptWithReader(os.Stdin, int(syscall.Stdin))
 }
 
 // ResolveDatabasePath returns the KeePass database path based on flag, environment, or config.

@@ -73,7 +73,7 @@
 				
 				<option value="file8">kpasscli/src/doc/man.go (100.0%)</option>
 				
-				<option value="file9">kpasscli/src/keepass/keepass.go (53.7%)</option>
+				<option value="file9">kpasscli/src/keepass/keepass.go (76.4%)</option>
 				
 				<option value="file10">kpasscli/src/output/handler.go (83.6%)</option>
 				
@@ -1072,7 +1072,9 @@ func ShowMan() <span class="cov8" title="1">{
 		<pre class="file" id="file9" style="display: none">package keepass
 
 import (
+        "bufio"
         "fmt"
+        "io"
         "os"
         "os/exec"
         "strings"
@@ -1225,21 +1227,37 @@ func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string, pr
 // Returns:
 //   - string: The entered password, or an empty string if an error occurs.
 //   - error: An error if one occurs while reading the password.
-func getPasswordFromPrompt() (string, error) <span class="cov0" title="0">{
-        // If no valid file or executable is found, prompt the user for the password
+
+// getPasswordFromPromptWithReader allows injection of input and fd for testability.
+func getPasswordFromPromptWithReader(r io.Reader, fd int) (string, error) <span class="cov8" title="1">{
         fmt.Print("Enter password: ")
         var password string
-        passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
-        if err != nil </span>{<span class="cov0" title="0">
+        // If fd &gt;= 0, use term.ReadPassword; else, read from r (for tests)
+        var passwordBytes []byte
+        var err error
+        if fd &gt;= 0 </span><span class="cov0" title="0">{
+                passwordBytes, err = term.ReadPassword(fd)
+        }</span> else<span class="cov8" title="1"> {
+                // For tests: read a line from r
+                reader := bufio.NewReader(r)
+                passwordBytes, err = reader.ReadBytes('\n')
         }</span>
-        <span class="cov0" title="0">password = strings.TrimSpace(string(passwordBytes))
+        <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+        <span class="cov8" title="1">password = strings.TrimSpace(string(passwordBytes))
         fmt.Println()
         debug.Log("Resolved password from prompt: %s", strings.Repeat("*", len(password)))
-        if password != "" </span><span class="cov0" title="0">{
+        if password != "" </span><span class="cov8" title="1">{
                 return password, nil
         }</span>
-        <span class="cov0" title="0">return "", err</span>
+        <span class="cov8" title="1">return "", err</span>
 }
+
+// getPasswordFromPrompt is the production version, using os.Stdin and syscall.Stdin
+func getPasswordFromPrompt() (string, error) <span class="cov0" title="0">{
+        return getPasswordFromPromptWithReader(os.Stdin, int(syscall.Stdin))
+}</span>
 
 // ResolveDatabasePath returns the KeePass database path based on flag, environment, or config.
 //
@@ -1271,41 +1289,54 @@ func ResolveDatabasePath(flagPath string, cfg *config.Config) string <span class
 //
 // Returns:
 //   - error: Any error encountered during the operation.
+//
+// GetAllFields finds a specific entry by path and displays all its fields.
+//
+// Parameters:
+//   - db: The KeePass database to search.
+//   - config: The configuration object for output formatting.
+//   - itemPath: The path of the entry to display.
+//
+// Returns:
+//   - error: Any error encountered during the operation.
 func GetAllFields(db *gokeepasslib.Database, config *config.Config, itemPath string) error <span class="cov0" title="0">{
-        finder := search.NewFinder(db)
-        // Rename the variable to 'results' to better reflect its type ([]search.Result)
-        results, err := finder.Find(itemPath)
+        return GetAllFieldsWithFinder(db, config, itemPath, nil, nil)
+}</span>
+
+// GetAllFieldsWithFinder is like GetAllFields but allows dependency injection for testing.
+// If finder is nil, uses search.NewFinder(db). If showAllFields is nil, uses output.ShowAllFields.
+func GetAllFieldsWithFinder(
+        db *gokeepasslib.Database,
+        config *config.Config,
+        itemPath string,
+        finder search.FinderInterface,
+        showAllFields func(*gokeepasslib.Entry, config.Config),
+) error <span class="cov8" title="1">{
+        if finder == nil </span><span class="cov0" title="0">{
+                finder = search.NewFinder(db)
+        }</span>
+        <span class="cov8" title="1">results, err := finder.Find(itemPath)
         if err != nil </span><span class="cov0" title="0">{
-                // Wrap the error for better context
                 return fmt.Errorf("error finding entry '%s': %w", itemPath, err)
         }</span>
-
-        // Handle cases based on the number of results found
-        <span class="cov0" title="0">if len(results) == 0 </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if len(results) == 0 </span><span class="cov8" title="1">{
                 return fmt.Errorf("entry not found: %s", itemPath)
         }</span>
-
-        <span class="cov0" title="0">if len(results) &gt; 1 </span><span class="cov0" title="0">{
-                // More than one entry found, which is ambiguous for showing all fields.
-                // You might want to list the paths found instead.
+        <span class="cov8" title="1">if len(results) &gt; 1 </span><span class="cov8" title="1">{
                 var foundPaths []string
-                for _, res := range results </span><span class="cov0" title="0">{
+                for _, res := range results </span><span class="cov8" title="1">{
                         foundPaths = append(foundPaths, res.Path)
                 }</span>
-                <span class="cov0" title="0">return fmt.Errorf("multiple entries found for '%s', please specify a unique path: %s", itemPath, strings.Join(foundPaths, ", "))</span>
+                <span class="cov8" title="1">return fmt.Errorf("multiple entries found for '%s', please specify a unique path: %s", itemPath, strings.Join(foundPaths, ", "))</span>
         }
-
-        // Exactly one result found. Access the Entry field from the first element.
-        // The 'Entry' field within search.Result is the *gokeepasslib.Entry we need.
-        <span class="cov0" title="0">singleEntry := results[0].Entry
-
-        // It's good practice to check if the Entry pointer is nil, although Find should ideally populate it.
-        if singleEntry == nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">singleEntry := results[0].Entry
+        if singleEntry == nil </span><span class="cov8" title="1">{
                 return fmt.Errorf("found result for '%s', but entry data is unexpectedly nil", itemPath)
         }</span>
-
-        // Now pass the correct type (*gokeepasslib.Entry) to ShowAllFields
-        <span class="cov0" title="0">output.ShowAllFields(singleEntry, *config)
+        <span class="cov8" title="1">if showAllFields == nil </span><span class="cov0" title="0">{
+                showAllFields = output.ShowAllFields
+        }</span>
+        <span class="cov8" title="1">showAllFields(singleEntry, *config)
         return nil</span>
 }
 </pre>

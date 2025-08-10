@@ -8,11 +8,23 @@ BINARY_NAME = dist/kpasscli
 
 # Build the binary
 
-$(BINARY_NAME): $(shell find . -type f -name '*.go')
-	go mod tidy
-	./build.sh
+${BINARY_NAME}-linux-amd64: $(shell find . -type f -name '*.go')
+	mkdir -p dist/linux-amd64
+	GOOS=linux GOARCH=amd64 go build -v -o dist/linux-amd64/kpasscli
 
-build: $(BINARY_NAME)
+${BINARY_NAME}-windows-amd64: $(shell find . -type f -name '*.go')
+	mkdir -p dist/windows-amd64
+	GOOS=windows GOARCH=amd64 go build -v -o dist/windows-amd64/kpasscli.exe
+
+${BINARY_NAME}-darwin-amd64: $(shell find . -type f -name '*.go')
+	mkdir -p dist/darwin-amd64
+	GOOS=darwin GOARCH=amd64 go build -v -o dist/darwin-amd64/kpasscli
+
+${BINARY_NAME}-darwin-arm64: $(shell find . -type f -name '*.go')
+	mkdir -p dist/darwin-arm64
+	GOOS=darwin GOARCH=arm64 go build -v -o dist/darwin-arm64/kpasscli
+
+build: ${BINARY_NAME}-linux-amd64 ${BINARY_NAME}-windows-amd64 ${BINARY_NAME}-darwin-amd64 ${BINARY_NAME}-darwin-arm64
 
 build-ubi7:
 	docker build -t kpasscli:ubi7 -f Dockerfile-ubi7 .
@@ -28,7 +40,7 @@ build-ubi7:
 
 # Clean up build artifacts
 clean:
-	rm -f $(BINARY_NAME)*
+	rm -rf dist/*
 
 # Clean up build artifacts
 clean-ubi7:
