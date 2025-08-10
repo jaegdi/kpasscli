@@ -2,8 +2,6 @@ package keepass
 
 import (
 	"fmt"
-	"kpasscli/src/config"
-	"kpasscli/src/debug"
 	"os"
 	"os/exec"
 	"strings"
@@ -11,6 +9,9 @@ import (
 
 	"github.com/tobischo/gokeepasslib/v3"
 	"golang.org/x/crypto/ssh/terminal"
+
+	"kpasscli/src/config"
+	"kpasscli/src/debug"
 )
 
 // OpenDatabase opens and decodes a KeePass database file.
@@ -62,10 +63,15 @@ func OpenDatabase(path string, password string) (*gokeepasslib.Database, error) 
 // Returns:
 //   - string: The resolved password
 //   - error: Any error encountered during password retrieval
-func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string) (string, error) {
+//
+// PasswordPromptFunc defines a function type for prompting the user for a password.
+type PasswordPromptFunc func() (string, error)
+
+// ResolvePassword retrieves the database password from a file, executable, or prompt.
+// The promptFunc parameter is optional; if nil, getPasswordFromPrompt is used.
+func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string, promptFunc ...PasswordPromptFunc) (string, error) {
 
 	passfile := ""
-
 	if passParam != "" {
 		passfile = passParam
 	} else if kdbpassenv != "" {
@@ -75,6 +81,10 @@ func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string) (s
 	} else if cfg.PasswordExecutable != "" {
 		passfile = cfg.PasswordExecutable
 	} else {
+		// Use injected promptFunc if provided, else default
+		if len(promptFunc) > 0 && promptFunc[0] != nil {
+			return promptFunc[0]()
+		}
 		return getPasswordFromPrompt()
 	}
 	// Resolve environment variables in passfile

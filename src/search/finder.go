@@ -6,10 +6,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"kpasscli/src/debug"
-
 	"github.com/tobischo/gokeepasslib/v3"
+
+	"kpasscli/src/debug"
 )
+
+// FinderInterface abstracts the Find method for testability
+type FinderInterface interface {
+	Find(query string) ([]Result, error)
+	// Optionally, add Options field if needed for tests
+}
 
 // Result represents the outcome of a search operation.
 // It contains the path to the found entry and a pointer to the entry itself.
@@ -146,7 +152,14 @@ func (f *Finder) findByAbsolutePath(path string) (*gokeepasslib.Entry, error) {
 	// Search for entry in final group
 	targetName := parts[len(parts)-1]
 	for _, entry := range currentGroup.Entries {
-		if entry.GetTitle() == targetName {
+		var title string
+		for _, v := range entry.Values {
+			if v.Key == "Title" {
+				title = v.Value.Content
+				break
+			}
+		}
+		if title == targetName {
 			return &entry, nil
 		}
 	}

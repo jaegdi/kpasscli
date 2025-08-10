@@ -2,10 +2,11 @@ package output
 
 import (
 	"fmt"
-	"kpasscli/src/debug"
-
 	// Hinzugefügt für Debug-Logs
+
 	"golang.design/x/clipboard"
+
+	"kpasscli/src/debug"
 )
 
 type Type string
@@ -15,7 +16,14 @@ const (
 	Stdout    Type = "stdout"
 )
 
-type Handler struct {
+
+// Handler is an interface for outputting values.
+type Handler interface {
+	Output(string) error
+}
+
+// stdHandler is the default implementation of Handler.
+type stdHandler struct {
 	outputType Type
 }
 
@@ -25,8 +33,9 @@ type Handler struct {
 //
 // Returns:
 //   - *Handler: A new Handler instance.
-func NewHandler(outputType Type) *Handler {
-	return &Handler{outputType: outputType}
+// NewHandler creates a new Handler instance with the specified output type.
+func NewHandler(outputType Type) Handler {
+	return &stdHandler{outputType: outputType}
 }
 
 // Output outputs the given value based on the handler's output type.
@@ -35,8 +44,8 @@ func NewHandler(outputType Type) *Handler {
 //
 // Returns:
 //   - error: Any error encountered during output.
-func (h *Handler) Output(value string) error {
-	debug.Log("Outputting value: %s", value) // Debug-Log hinzugefügt
+func (h *stdHandler) Output(value string) error {
+	debug.Log("Outputting value: %s", value)
 	switch h.outputType {
 	case Clipboard:
 		return h.toClipboard(value)
@@ -53,8 +62,8 @@ func (h *Handler) Output(value string) error {
 //
 // Returns:
 //   - error: Any error encountered during the clipboard operation.
-func (h *Handler) toClipboard(value string) error {
-	debug.Log("Copying to clipboard: %s", value) // Debug-Log hinzugefügt
+func (h *stdHandler) toClipboard(value string) error {
+	debug.Log("Copying to clipboard: %s", value)
 	if err := clipboard.Init(); err != nil {
 		return fmt.Errorf("failed to initialize clipboard: %v", err)
 	}
@@ -68,8 +77,8 @@ func (h *Handler) toClipboard(value string) error {
 //
 // Returns:
 //   - error: Any error encountered during the stdout operation.
-func (h *Handler) toStdout(value string) error {
-	debug.Log("Printing to stdout: %s", value) // Debug-Log hinzugefügt
+func (h *stdHandler) toStdout(value string) error {
+	debug.Log("Printing to stdout: %s", value)
 	fmt.Println(value)
 	return nil
 }

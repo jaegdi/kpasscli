@@ -15,7 +15,9 @@ Options:
     -out | -o type          Output type (stdout/clipboard)
     -case-sensitive | -c    Enable case-sensitive search
     -exact-match | -e       Enable exact match search
+    -config | -c path       Path to configuration file (default: ~/.config/kpasscli/config.yaml)
     -create-config | -cc    Create an example config file
+    -print-config | -pc     Print the current detected config
     -verify | -v            Show the path of found item
     -debug | -d             Enable debug logging
     -man | -m               Show full manual

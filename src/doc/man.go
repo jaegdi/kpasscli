@@ -58,8 +58,14 @@ OPTIONS
     -exact-match|-e
         Enable exact match search
 
+    -config|-c path
+        Path to the configuration file (default: ~/.config/kpasscli/config.yaml)
+        
     -create-config|-cc
         Create an example configuration file
+
+    -print-config|-pc
+        Print the current detected config
 
     -man|-m
         Display this manual page

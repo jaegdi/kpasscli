@@ -1,0 +1,1499 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>kpasscli: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">kpasscli/init.go (55.2%)</option>
+				
+				<option value="file1">kpasscli/main.go (78.2%)</option>
+				
+				<option value="file2">kpasscli/src/cmd/cli-params.go (97.0%)</option>
+				
+				<option value="file3">kpasscli/src/config/config.go (84.6%)</option>
+				
+				<option value="file4">kpasscli/src/debug/debug.go (31.6%)</option>
+				
+				<option value="file5">kpasscli/src/doc/help.go (100.0%)</option>
+				
+				<option value="file6">kpasscli/src/doc/man.go (100.0%)</option>
+				
+				<option value="file7">kpasscli/src/keepass/keepass.go (64.6%)</option>
+				
+				<option value="file8">kpasscli/src/output/handler.go (94.1%)</option>
+				
+				<option value="file9">kpasscli/src/search/finder.go (86.8%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "flag"
+        "fmt"
+        "log"
+        "os"
+        "path/filepath"
+
+        "kpasscli/src/cmd"
+        "kpasscli/src/config"
+        "kpasscli/src/debug"
+        "kpasscli/src/doc"
+        "kpasscli/src/search"
+)
+
+// var Flags *cmd.Flags
+
+func Init() *cmd.Flags <span class="cov8" title="1">{
+        log.SetFlags(log.LstdFlags)
+        flags := cmd.ParseFlagsDefault()
+        flag.Usage = doc.ShowHelp
+        flag.Parse()
+
+        // switch toggles
+        if flags.DebugFlag </span><span class="cov8" title="1">{
+                debug.Enable()
+        }</span>
+        <span class="cov8" title="1">if flags.VerifyFlag </span><span class="cov8" title="1">{
+                search.EnableVerify()
+        }</span>
+
+        // Handle special flags and help messages
+        <span class="cov8" title="1">if flags.CreateConfig </span><span class="cov0" title="0">{
+                filename := "config.yaml"
+                configPath := filepath.Join(".", filename)
+                if err := config.CreateExampleConfig(configPath); err != nil </span><span class="cov0" title="0">{
+                        debug.ErrMsg(err, "Error creating config file")
+                        os.Exit(1)
+                }</span>
+                <span class="cov0" title="0">debug.ErrMsg(nil, fmt.Sprintf("Example config file '%s' created successfully.", configPath))
+                os.Exit(0)</span>
+        }
+        <span class="cov8" title="1">if flags.PrintConfig </span><span class="cov8" title="1">{
+                cfg, err := config.Load(flags.ConfigPath)
+                if err != nil </span><span class="cov0" title="0">{
+                        debug.ErrMsg(err, "Error loading config")
+                        os.Exit(1)
+                }</span>
+                <span class="cov8" title="1">cfg.Print()</span>
+        }
+        <span class="cov8" title="1">if flags.ShowMan </span><span class="cov0" title="0">{
+                doc.ShowMan()
+                os.Exit(0)
+        }</span>
+        <span class="cov8" title="1">if flags.ShowHelp </span><span class="cov0" title="0">{
+                doc.ShowHelp()
+                os.Exit(0)
+        }</span>
+        <span class="cov8" title="1">return flags</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package main
+
+import (
+        "fmt"
+        "os"
+
+        "github.com/tobischo/gokeepasslib/v3"
+
+        "kpasscli/src/cmd"
+        "kpasscli/src/config"
+        "kpasscli/src/debug"
+        "kpasscli/src/keepass"
+        "kpasscli/src/output"
+        "kpasscli/src/search"
+)
+
+// RunApp contains the main application logic and is testable.
+func RunApp(
+        flags *cmd.Flags,
+        loadConfig func(string) (*config.Config, error),
+        resolveDBPath func(string, *config.Config) string,
+        resolvePassword func(string, *config.Config, string, ...keepass.PasswordPromptFunc) (string, error),
+        openDatabase func(string, string) (*gokeepasslib.Database, error),
+        newFinder func(*gokeepasslib.Database) search.FinderInterface,
+        newHandler func(output.Type) output.Handler,
+        getEnv func(string) string,
+) error <span class="cov8" title="1">{
+        debug.Log("Starting kpasscli with item: %s", flags.Item)
+
+        if flags.Item == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("item parameter is required")
+        }</span>
+
+        <span class="cov8" title="1">config, err := loadConfig(flags.ConfigPath)
+        if err != nil </span><span class="cov8" title="1">{
+                fmt.Fprintf(os.Stderr, "Warning: Could not load config file: %v\n", err)
+                if config == nil </span><span class="cov8" title="1">{
+                        return nil
+                }</span>
+        }
+
+        <span class="cov8" title="1">dbPath := resolveDBPath(flags.KdbPath, config)
+        debug.Log("Resolved database path: %s", dbPath)
+        if dbPath == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("no KeePass database path provided")
+        }</span>
+
+        <span class="cov8" title="1">kdbpasswordenv := getEnv("KPASSCLI_kdbpassword")
+        password, err := resolvePassword(flags.KdbPassword, config, kdbpasswordenv)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("Error getting password: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">db, err := openDatabase(dbPath, password)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("Error opening database: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">finder := newFinder(db)
+        // If the Finder supports Options, set them (for real Finder)
+        if f, ok := finder.(*search.Finder); ok </span><span class="cov0" title="0">{
+                f.Options = search.SearchOptions{
+                        CaseSensitive: flags.CaseSensitive,
+                        ExactMatch:    flags.ExactMatch,
+                }
+        }</span>
+        <span class="cov8" title="1">results, err := finder.Find(flags.Item)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("Error searching for item: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if len(results) == 0 </span><span class="cov8" title="1">{
+                return fmt.Errorf("no items found")
+        }</span>
+
+        <span class="cov8" title="1">if len(results) &gt; 1 </span><span class="cov8" title="1">{
+                for _, result := range results </span><span class="cov8" title="1">{
+                        fmt.Fprintf(os.Stderr, "- %s\n", result.Path)
+                        debug.Log("Found item: %s", result.Path)
+                }</span>
+                <span class="cov8" title="1">return fmt.Errorf("multiple items found")</span>
+        }
+
+        <span class="cov8" title="1">outputType := resolveOutputType(flags.Out, config)
+        handler := newHandler(outputType)
+
+        value, err := results[0].GetField(flags.FieldName)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("Error getting field: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if err := handler.Output(value); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("Error outputting value: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func main() <span class="cov0" title="0">{
+        flags := Init()
+        err := RunApp(
+                flags,
+                config.Load,
+                keepass.ResolveDatabasePath,
+                func(passParam string, cfg *config.Config, kdbpassenv string, promptFunc ...keepass.PasswordPromptFunc) (string, error) </span><span class="cov0" title="0">{
+                        return keepass.ResolvePassword(passParam, cfg, kdbpassenv, promptFunc...)
+                }</span>,
+                keepass.OpenDatabase,
+                func(db *gokeepasslib.Database) search.FinderInterface <span class="cov0" title="0">{ return search.NewFinder(db) }</span>,
+                output.NewHandler,
+                os.Getenv,
+        )
+        <span class="cov0" title="0">if err != nil </span><span class="cov0" title="0">{
+                debug.ErrMsg(err, "kpasscli")
+                os.Exit(1)
+        }</span>
+}
+
+// resolveOutputType remains unchanged
+func resolveOutputType(flagOut string, cfg *config.Config) output.Type <span class="cov8" title="1">{
+        if flagOut != "" </span><span class="cov0" title="0">{
+                return output.Type(flagOut)
+        }</span>
+        <span class="cov8" title="1">if kpcliout := os.Getenv("KPASSCLI_OUT"); kpcliout != "" </span><span class="cov0" title="0">{
+                if output.IsValidType(kpcliout) </span><span class="cov0" title="0">{
+                        return output.Type(kpcliout)
+                }</span>
+        }
+        <span class="cov8" title="1">if cfg != nil &amp;&amp; cfg.DefaultOutput != "" </span><span class="cov8" title="1">{
+                return output.Type(cfg.DefaultOutput)
+        }</span>
+        <span class="cov0" title="0">return output.Stdout</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package cmd
+
+import (
+        "flag"
+
+        "kpasscli/src/doc"
+)
+
+// parses command-line flags, and supports the following flags:
+//
+// -kdbpath | -p: Path to KeePass database file
+// -kdbpassword | -w: Password file or executable to get password
+// -item | -i: Item to search for
+// -fieldname | -f: Field name to retrieve (default: "Password")
+// -out | -o: Output type (clipboard/stdout)
+// -case-sensitive | -c: Enable case-sensitive search
+// -exact-match | -e: Enable exact match search
+// -man | -m: Show manual page
+// -help | -h: Show help message
+// -debug | -d: Enable debug logging
+// -config | -c path: Path to configuration file (default: ~/.config/kpasscli/config.yaml)
+// -verify | -v: Enable verify messages
+// -create-config | -cc: Create an example config file
+// -print-config | -pc: print the current detected config to stdout
+
+type Flags struct {
+        KdbPath       string
+        KdbPassword   string
+        Item          string
+        FieldName     string
+        Out           string
+        ConfigPath    string
+        CaseSensitive bool
+        ExactMatch    bool
+        ShowMan       bool
+        ShowHelp      bool
+        DebugFlag     bool
+        VerifyFlag    bool
+        CreateConfig  bool
+        PrintConfig   bool
+}
+
+// ParseFlags parses flags from the provided FlagSet and args. For production, use ParseFlagsDefault().
+func ParseFlags(fs *flag.FlagSet, args []string) *Flags <span class="cov8" title="1">{
+        flags := &amp;Flags{}
+        fs.StringVar(&amp;flags.KdbPath, "kdbpath", "", "Path to KeePass database file")
+        fs.StringVar(&amp;flags.KdbPath, "p", "", "Path to KeePass database file (shorthand)")
+
+        fs.StringVar(&amp;flags.KdbPassword, "kdbpassword", "", "Password file or executable to get password")
+        fs.StringVar(&amp;flags.KdbPassword, "w", "", "Password file or executable to get password (shorthand)")
+
+        fs.StringVar(&amp;flags.Item, "item", "", "Item to search for")
+        fs.StringVar(&amp;flags.Item, "i", "", "Item to search for (shorthand)")
+
+        fs.StringVar(&amp;flags.FieldName, "fieldname", "Password", "Field name to retrieve")
+        fs.StringVar(&amp;flags.FieldName, "f", "Password", "Field name to retrieve (shorthand)")
+
+        fs.StringVar(&amp;flags.Out, "out", "", "Output type (clipboard/stdout)")
+        fs.StringVar(&amp;flags.Out, "o", "", "Output type (clipboard/stdout) (shorthand)")
+
+        fs.BoolVar(&amp;flags.CaseSensitive, "case-sensitive", false, "Enable case-sensitive search")
+        fs.BoolVar(&amp;flags.CaseSensitive, "cs", false, "Enable case-sensitive search (shorthand)")
+
+        fs.BoolVar(&amp;flags.ExactMatch, "exact-match", false, "Enable exact match search")
+        fs.BoolVar(&amp;flags.ExactMatch, "e", false, "Enable exact match search (shorthand)")
+
+        fs.BoolVar(&amp;flags.ShowMan, "man", false, "Show manual page")
+        fs.BoolVar(&amp;flags.ShowMan, "m", false, "Show manual page (shorthand)")
+
+        fs.BoolVar(&amp;flags.ShowHelp, "help", false, "Show help message")
+        fs.BoolVar(&amp;flags.ShowHelp, "h", false, "Show help message (shorthand)")
+
+        fs.BoolVar(&amp;flags.VerifyFlag, "verify", false, "Enable verify message")
+        fs.BoolVar(&amp;flags.VerifyFlag, "v", false, "Enable verify message (shorthand)")
+
+        fs.BoolVar(&amp;flags.DebugFlag, "debug", false, "Enable debug logging")
+        fs.BoolVar(&amp;flags.DebugFlag, "d", false, "Enable debug logging (shorthand)")
+
+        fs.BoolVar(&amp;flags.CreateConfig, "create-config", false, "Create an example config file")
+        fs.BoolVar(&amp;flags.CreateConfig, "cc", false, "Create an example config file (shorthand)")
+
+        fs.BoolVar(&amp;flags.PrintConfig, "print-config", false, "Print current configuration")
+        fs.BoolVar(&amp;flags.PrintConfig, "pc", false, "Print current configuration (shorthand)")
+
+        fs.StringVar(&amp;flags.ConfigPath, "config", "~/.config/kpasscli/config.yaml", "Path to configuration file")
+        fs.StringVar(&amp;flags.ConfigPath, "c", "~/.config/kpasscli/config.yaml", "Path to configuration file (shorthand)")
+
+        fs.Usage = doc.ShowHelp
+        fs.Parse(args) // Parse the flags from the provided args. This is implemented to test the ParseFlags function.
+        return flags
+}</span>
+
+// ParseFlagsDefault parses flags from the global flag.CommandLine and os.Args[1:].
+// This is the default function to use in production.
+// It sets up the flags and returns the parsed Flags struct.
+// It also sets the usage function to show help documentation.
+// It is typically called in the main function of the application.
+// It initializes the logging, handles special flags, and exits the program if necessary.
+func ParseFlagsDefault() *Flags <span class="cov0" title="0">{
+        return ParseFlags(flag.CommandLine, nil)
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package config
+
+import (
+        "fmt"
+        "kpasscli/src/debug"
+        "os"
+        "path/filepath"
+
+        "gopkg.in/yaml.v2"
+)
+
+// Config represents the application configuration.
+type Config struct {
+        // DatabasePath is the default path to the KeePass database file
+        DatabasePath string `yaml:"database_path"`
+        // DefaultOutput specifies the default output type (stdout/clipboard)
+        DefaultOutput      string `yaml:"default_output"`
+        PasswordFile       string `yaml:"password_file"`
+        PasswordExecutable string `yaml:"password_executable"`
+        ConfigfilePath     string `yaml:"configfile_path"`
+}
+
+// Load reads and parses the configuration file.
+// Returns:
+//
+//        *Config: Parsed configuration
+//        error: Any error encountered while reading or parsing
+//
+// Load loads the configuration from a YAML file. It first checks for the
+// presence of "config.yaml" in the current directory. If the file does not
+// exist there, it attempts to load the configuration from the user's home
+// directory under ".config/kpasscli/config.yaml". The function reads the
+// configuration file, unmarshals its content into a Config struct, and
+// returns a pointer to the Config struct along with any error encountered
+// during the process.
+//
+// Returns:
+//   - *Config: A pointer to the Config struct containing the configuration
+//     data.
+//   - error: An error object if any error occurred during the loading or
+//     unmarshalling of the configuration file, otherwise nil.
+func Load(configPath string) (*Config, error) <span class="cov8" title="1">{
+        if configPath == "" </span><span class="cov0" title="0">{
+                configPath = filepath.Join(".", "config.yaml")
+        }</span>
+        <span class="cov8" title="1">if _, err := os.Stat(configPath); os.IsNotExist(err) </span><span class="cov8" title="1">{
+                configPath = filepath.Join(os.Getenv("HOME"), ".config", "kpasscli", "config.yaml")
+        }</span>
+        <span class="cov8" title="1">debug.Log("Loading config from: %s\n", configPath)
+        data, err := os.ReadFile(configPath)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">var config Config
+        if err := yaml.Unmarshal(data, &amp;config); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">config.ConfigfilePath = configPath
+        debug.Log("Loaded config: %+v\n", config)
+        return &amp;config, nil</span>
+}
+
+// CreateExampleConfig creates an example configuration file in the current directory.
+// Returns:
+//   - error: Any error encountered during the creation of the config file.
+func CreateExampleConfig(configPath string) error <span class="cov8" title="1">{
+        exampleConfig := Config{
+                DatabasePath:       "/path/to/your/database.kdbx",
+                DefaultOutput:      "stdout",
+                PasswordFile:       "/path/to/your/password.txt",
+                PasswordExecutable: "[/path/to/your/]password_executable.sh",
+        }
+        data, err := yaml.Marshal(&amp;exampleConfig)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">return os.WriteFile(configPath, data, 0644)</span>
+}
+
+func (c *Config) Print() <span class="cov8" title="1">{
+        fmt.Fprintf(os.Stderr, "Current used Configuration: %s\n", c.ConfigfilePath)
+        fmt.Fprintf(os.Stderr, "------------------------------------------\n")
+        fmt.Fprintf(os.Stderr, "Database Path: %s\n", c.DatabasePath)
+        fmt.Fprintf(os.Stderr, "Default Output: %s\n", c.DefaultOutput)
+        fmt.Fprintf(os.Stderr, "Password File: %s\n", c.PasswordFile)
+        fmt.Fprintf(os.Stderr, "Password Executable: %s\n", c.PasswordExecutable)
+        fmt.Fprintf(os.Stderr, "------------------------------------------\n")
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package debug
+
+import (
+        "fmt"
+        "log"
+        "os"
+        "path/filepath"
+        "regexp"
+        "runtime"
+        "strings"
+)
+
+var enabled bool
+
+// Enable sets the debug logging flag to true.
+func Enable() <span class="cov0" title="0">{
+        enabled = true
+}</span>
+
+// Optimized error handling with centralized error reporting
+func ErrMsg(err error, msg string) <span class="cov8" title="1">{
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, "ERROR %s: %v\n", msg, err)
+                os.Exit(1)
+        }</span>
+}
+
+// Log logs a debug message if debug logging is enabled.
+// It includes the name of the calling function and the line number in the log message.
+// Parameters:
+//   - format: The format string for the log message, similar to fmt.Printf.
+//   - v: The values to be formatted according to the format string.
+func Log(format string, v ...interface{}) <span class="cov8" title="1">{
+        for i := range v </span><span class="cov8" title="1">{
+                val := v[i]
+                valStr := fmt.Sprintf("%v", val)
+                if matched, _ := regexp.MatchString(`(?i)password|passwort|-----BEGIN RSA PRIVATE KEY-----|-----BEGIN CERTIFICATE-----`, valStr); matched </span><span class="cov0" title="0">{
+                        re := regexp.MustCompile(`(?is)(passwor(:?d|t)|-----BEGIN RSA PRIVATE KEY-----|-----BEGIN CERTIFICATE-----).*`)
+                        v[i] = re.ReplaceAllString(valStr, "$1 ********")
+                }</span>
+        }
+        <span class="cov8" title="1">if enabled </span><span class="cov0" title="0">{
+                pc, file, line, ok := runtime.Caller(1)
+                if ok </span><span class="cov0" title="0">{
+                        fn := runtime.FuncForPC(pc)
+                        funcName := fn.Name()
+                        shortFuncName := funcName[strings.LastIndex(funcName, ".")+1:]
+                        shortFile := filepath.Base(file)
+                        log.Printf("%s:%d %s: "+format, append([]interface{}{shortFile, line, shortFuncName}, v...)...)
+                }</span> else<span class="cov0" title="0"> {
+                        log.Printf(format, v...)
+                }</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package doc
+
+import (
+        "fmt"
+)
+
+func ShowHelp() <span class="cov8" title="1">{
+        help := `Usage: kpasscli [OPTIONS]
+
+Options:
+    -kdbpath | -p path      Path to KeePass database file
+    -kdbpassword | -w path  Path to password file or executable, if not given asks for password interactively
+    -item | -i name         Entry to search for
+    -fieldname | -f field   Field to retrieve (default: Password)
+    -out | -o type          Output type (stdout/clipboard)
+    -case-sensitive | -c    Enable case-sensitive search
+    -exact-match | -e       Enable exact match search
+    -config | -c path       Path to configuration file (default: ~/.config/kpasscli/config.yaml)
+    -create-config | -cc    Create an example config file
+    -print-config | -pc     Print the current detected config
+    -verify | -v            Show the path of found item
+    -debug | -d             Enable debug logging
+    -man | -m               Show full manual
+    -help | -h              Show this help
+
+Example:
+    kpasscli -kdbpath=/path/to/db.kdbx -kdbpassword=/path/to/pass.txt -item="/Personal/Banking/Account"
+    kpasscli -p=/path/to/db.kdbx -w=/path/to/pass.txt -i="/Personal/Banking/Account"
+
+    if keepass-db file and password-file|password-exec and output type is set in the config file
+    then it's enough to specify the item and my be the fieldname.
+
+    # for password
+    kpasscli -i=/Personal/Banking/Account
+
+    # or if Account is uniq in the keepass-db
+    kasscli -i=Account
+
+    # To verify, if the right item was found, you can use the -verify flag
+    kpasscli -i=Account -v
+
+    # for username
+    kasscli -i=/Personal/Banking/Account -f=UserName
+
+For more information, use -man|-m
+
+AUTHOR
+        Dirk Jäger
+
+LICENSE
+        GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007`
+
+        fmt.Println(help)
+}</span>
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package doc
+
+import (
+        "fmt"
+)
+
+const manPage = `NAME
+    kpasscli - KeePass database command line interface
+
+SYNOPSIS
+    kpasscli [-kdbpath|-p path] [-kdbpassword|-w path] -item|-i name [-fieldname|-f field] [-out|-o type] [-verify|-v] [-man|-m] [-help|-h]
+
+DESCRIPTION
+    kpasscli is a command-line tool for querying KeePass database files.
+    It allows retrieving entries and their fields using various search methods.
+
+    The intention for this tool is to use it in automation scripts, to get secret strings like
+    cert keys, key passwords, user or tech. user passwords, tokens, ..., which are stored in a keepass-db.
+    And it supports optional to open the keepass-db without an interactive password prompt.
+
+    If no -kdbpassword|-w is given, then kpasscli asks for the password to open the keepass-db interactively by a passwored prompt.
+
+    If the item is found, it takes per default the value of the password field or if
+    the parameter -fieldname|-f is given, the value of this field.
+
+    Then it depends of the output config, if this is set to
+    - stdout: The value is printed to stdout
+    - clipboard: The value is copied into the clipboard and can be pasted wherever it is needed
+
+OPTIONS
+    -kdbpath|-p path
+        Path to the KeePass database file. If not specified, the tool will look for
+        the path in the KDBPATH environment variable or the config file.
+
+    -kdbpassword|-w password-file
+        Path to a file containing the database password or to an executable that
+        outputs the password. For security reasons, the password cannot be provided
+        directly on the command line.
+
+    -item|-i name
+        The entry to search for. This can be:
+        - An absolute path starting with "/" (e.g., "/Personal/Banking/Account")
+        - A relative path (e.g., "Banking/Account")
+        - A simple name (e.g., "Account")
+
+    -fieldname|-f field
+        The field to retrieve from the entry. Defaults to "Password".
+        Common fields: Title, UserName, Password, URL, Notes
+
+    -out|-o type
+        How to output the retrieved value. Options:
+        - stdout: Print to standard output (default)
+        - clipboard: Copy to system clipboard
+
+    -case-sensitive|-c
+        Enable case-sensitive search
+
+    -exact-match|-e
+        Enable exact match search
+
+    -config|-c path
+        Path to the configuration file (default: ~/.config/kpasscli/config.yaml)
+        
+    -create-config|-cc
+        Create an example configuration file
+
+    -print-config|-pc
+        Print the current detected config
+
+    -man|-m
+        Display this manual page
+
+    -help|-h
+        Display brief help message
+
+    -verify|-v
+        Show the path of found item
+
+    -debug|-d
+        Enable debug logging
+
+SEARCH BEHAVIOR
+    Absolute Path (/path/to/entry):
+        Searches for an exact match at the specified location in the database.
+
+    Relative Path (path/to/entry):
+        Searches through all groups for a matching path.
+        If multiple matches are found, lists all matches.
+
+    Simple Name (entry):
+        Searches all entries regardless of location.
+        If multiple matches are found, lists all matches.
+
+CONFIGURATION
+    Configuration can be provided via a config.yaml file with the following fields:
+    - database_path:       Default path to the KeePass database
+    - default_output:      Default output type (stdout/clipboard)
+
+    # Password retrieval methods, take care, this can be unsecure if you not protect the password file
+    # or the executable properly. See SECURITY
+    - password_file:       file which contains the password to open the keepass db
+    - password_executable: the path to the executable, that returns the password to open the keepass database.
+                           This method can be safe, if the executable itself asks for a general password to run it.
+
+ENVIRONMENT
+    KPASSCLI_KDBPATH       Alternative way to specify the KeePass database path
+    KPASSCLI_OUT           Alternative way to specify the output type (stdout/clipboard)
+    KPASSCLI_kdbpassword   Alternative way to specify the password file or executable
+
+SECURITY
+    To enable noninteractive access to open the keepass-db, there are two options:
+    - provide a password-file
+    - provide a executable that prints the password to STDOUT
+
+    In both cases there are security risks, if this is not well prepared.
+
+    A secure way is to use a wallet that is opened with the user login, like kwallet, if you use KDE Desktop.
+
+EXAMPLES
+    Get password for a specific entry:
+        kpasscli -kdbpath=/path/to/db.kdbx -kdbpassword=/path/to/pass.txt -item="/Personal/Banking/Account"
+        kpasscli -p=/path/to/db.kdbx -w=/path/to/pass.txt -i="/Personal/Banking/Account"
+
+    Get username instead of password:
+        kpasscli -kdbpath=/path/to/db.kdbx -kdbpassword=/path/to/pass.txt -item="Account" -fieldname=UserName
+        kpasscli -p=/path/to/db.kdbx -w=/path/to/pass.txt -i="Account" -f=UserName
+
+    Copy password to clipboard:
+        kpasscli -kdbpath=/path/to/db.kdbx -kdbpassword=/path/to/pass.txt -item="Account" -out=clipboard
+        kpasscli -p=/path/to/db.kdbx -w=/path/to/pass.txt -i="Account" -o=clipboard
+
+SECURITY
+    - Database passwords must be provided via file or executable
+    - Clipboard contents are not automatically cleared
+    - Be cautious when using clipboard output on shared systems
+
+AUTHOR
+    Dirk Jäger
+
+LICENSE
+          GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
+`
+
+func ShowMan() <span class="cov8" title="1">{
+        fmt.Print(manPage)
+        fmt.Println()
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package keepass
+
+import (
+        "fmt"
+        "os"
+        "os/exec"
+        "strings"
+        "syscall"
+
+        "github.com/tobischo/gokeepasslib/v3"
+        "golang.org/x/crypto/ssh/terminal"
+
+        "kpasscli/src/config"
+        "kpasscli/src/debug"
+)
+
+// OpenDatabase opens and decodes a KeePass database file.
+// Parameters:
+//
+//        path: Path to the KeePass database file
+//        password: Password to decrypt the database
+//
+// Returns:
+//
+//        *gokeepasslib.Database: Decoded database object
+//        error: Any error encountered during opening or decoding
+func OpenDatabase(path string, password string) (*gokeepasslib.Database, error) <span class="cov8" title="1">{
+        file, err := os.Open(path)
+        if err != nil </span><span class="cov8" title="1">{
+                debug.Log("Error opening file: %v\n", err)
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">defer file.Close()
+        debug.Log("OpenDatabase %s %s", path, strings.Repeat("*", len(password)))
+
+        db := gokeepasslib.NewDatabase()
+        db.Credentials = gokeepasslib.NewPasswordCredentials(password)
+        // debug.Log("OpenDatabase\n%v\n", db)
+
+        if err := gokeepasslib.NewDecoder(file).Decode(db); err != nil </span><span class="cov8" title="1">{
+                debug.Log("Error decoding database: %v\n", err)
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">if err := db.UnlockProtectedEntries(); err != nil </span><span class="cov0" title="0">{
+                debug.Log("Error unlocking protected entries: %v\n", err)
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return db, nil</span>
+}
+
+// ResolvePassword retrieves the database password from a file or executable.
+// It first checks if the password parameter is provided. If not, it falls back to the configuration.
+// If the configuration specifies an executable, it runs the executable to get the password.
+// If the password parameter is a named pipe, it reads the password from the pipe.
+// If the password parameter is a regular file, it reads the password from the file.
+// If the password parameter is an executable, it runs the executable to get the password.
+// Parameters:
+//   - passParam: Path to password file or executable
+//   - cfg: Configuration object containing password file or executable paths
+//
+// Returns:
+//   - string: The resolved password
+//   - error: Any error encountered during password retrieval
+//
+// PasswordPromptFunc defines a function type for prompting the user for a password.
+type PasswordPromptFunc func() (string, error)
+
+// ResolvePassword retrieves the database password from a file, executable, or prompt.
+// The promptFunc parameter is optional; if nil, getPasswordFromPrompt is used.
+func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string, promptFunc ...PasswordPromptFunc) (string, error) <span class="cov8" title="1">{
+
+        passfile := ""
+        if passParam != "" </span><span class="cov8" title="1">{
+                passfile = passParam
+        }</span> else<span class="cov8" title="1"> if kdbpassenv != "" </span><span class="cov8" title="1">{
+                passfile = kdbpassenv
+        }</span> else<span class="cov8" title="1"> if cfg.PasswordFile != "" </span><span class="cov8" title="1">{
+                passfile = cfg.PasswordFile
+        }</span> else<span class="cov8" title="1"> if cfg.PasswordExecutable != "" </span><span class="cov0" title="0">{
+                passfile = cfg.PasswordExecutable
+        }</span> else<span class="cov8" title="1"> {
+                // Use injected promptFunc if provided, else default
+                if len(promptFunc) &gt; 0 &amp;&amp; promptFunc[0] != nil </span><span class="cov8" title="1">{
+                        return promptFunc[0]()
+                }</span>
+                <span class="cov0" title="0">return getPasswordFromPrompt()</span>
+        }
+        // Resolve environment variables in passfile
+        <span class="cov8" title="1">passfile = os.ExpandEnv(passfile)
+        debug.Log(passfile)
+
+        // Check if passfile is an executable in $PATH
+        if execPath, err := exec.LookPath(passfile); err == nil </span><span class="cov8" title="1">{
+                passfile = execPath
+        }</span>
+        <span class="cov8" title="1">info, err := os.Stat(passfile)
+        if err != nil </span><span class="cov8" title="1">{
+                debug.Log("passfile: %v Error: %v", passfile, err.Error())
+                return "", fmt.Errorf("password must be provided via file or executable")
+        }</span>
+        <span class="cov8" title="1">debug.Log("%v", info)
+
+        if info.Mode()&amp;os.ModeNamedPipe != 0 </span><span class="cov0" title="0">{
+                // Read password from process substitution
+                data, err := os.ReadFile(passfile)
+                if err != nil </span><span class="cov0" title="0">{
+                        debug.Log(err.Error())
+                        return "", err
+                }</span>
+                <span class="cov0" title="0">password := strings.TrimSpace(string(data))
+                debug.Log("Resolved password from named pipe: %s", strings.Repeat("*", len(password)))
+                return password, nil</span>
+        }
+
+        <span class="cov8" title="1">if info.Mode()&amp;0111 != 0 </span><span class="cov8" title="1">{
+                // Execute file and read password from stdout
+                cmd := exec.Command(passfile)
+                output, err := cmd.Output()
+                if err != nil </span><span class="cov0" title="0">{
+                        debug.Log(err.Error())
+                        return "", err
+                }</span>
+                <span class="cov8" title="1">password := strings.TrimSpace(string(output))
+                debug.Log("Resolved password from executable: %s", strings.Repeat("*", len(password)))
+                return password, nil</span>
+        }
+
+        <span class="cov8" title="1">if info.Mode().IsRegular() </span><span class="cov8" title="1">{
+                // Read password from file
+                data, err := os.ReadFile(passfile)
+                if err != nil </span><span class="cov0" title="0">{
+                        debug.Log(err.Error())
+                        return "", err
+                }</span>
+                <span class="cov8" title="1">password := strings.TrimSpace(string(data))
+                debug.Log("Resolved password from file: %s", strings.Repeat("*", len(password)))
+                return password, nil</span>
+        }
+
+        <span class="cov0" title="0">return "", fmt.Errorf("password must be provided via file or executable")</span>
+}
+
+// getPasswordFromPrompt prompts the user to enter a password securely.
+// It reads the password input without echoing it to the terminal, trims any
+// leading or trailing whitespace, and returns the password as a string.
+// If an error occurs while reading the password, it returns an empty string
+// and the encountered error.
+func getPasswordFromPrompt() (string, error) <span class="cov0" title="0">{
+        // If no valid file or executable is found, prompt the user for the password
+        fmt.Print("Enter password: ")
+        var password string
+        passwordBytes, err := terminal.ReadPassword(int(syscall.Stdin))
+        if err != nil </span>{<span class="cov0" title="0">
+        }</span>
+        <span class="cov0" title="0">password = strings.TrimSpace(string(passwordBytes))
+        fmt.Println()
+        debug.Log("Resolved password from prompt: %s", strings.Repeat("*", len(password)))
+        if password != "" </span><span class="cov0" title="0">{
+                return password, nil
+        }</span>
+        <span class="cov0" title="0">return "", err</span>
+}
+
+// ResolveDatabasePath determines the path to the KeePass database file.
+// It checks the following sources in order of precedence:
+// 1. The provided flagPath argument. If it is not empty, it is returned.
+// 2. The environment variable "KPASSCLI_KDBPATH". If it is set, its value is returned.
+// 3. The DatabasePath field in the provided config.Config object. If it is not nil and its DatabasePath field is not empty, it is returned.
+// If none of these sources provide a path, an empty string is returned.
+//
+// Parameters:
+// - flagPath: A string representing the path provided via a command-line flag.
+// - cfg: A pointer to a config.Config object that may contain the database path.
+//
+// Returns:
+// A string representing the resolved database path, or an empty string if no path is found.
+func ResolveDatabasePath(flagPath string, cfg *config.Config) string <span class="cov8" title="1">{
+        if flagPath != "" </span><span class="cov8" title="1">{
+                return flagPath
+        }</span>
+        <span class="cov8" title="1">if envPath := os.Getenv("KPASSCLI_KDBPATH"); envPath != "" </span><span class="cov8" title="1">{
+                return envPath
+        }</span>
+        <span class="cov8" title="1">if cfg != nil &amp;&amp; cfg.DatabasePath != "" </span><span class="cov8" title="1">{
+                return cfg.DatabasePath
+        }</span>
+        <span class="cov8" title="1">return ""</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package output
+
+import (
+        "fmt"
+        // Hinzugefügt für Debug-Logs
+
+        "golang.design/x/clipboard"
+
+        "kpasscli/src/debug"
+)
+
+type Type string
+
+const (
+        Clipboard Type = "clipboard"
+        Stdout    Type = "stdout"
+)
+
+
+// Handler is an interface for outputting values.
+type Handler interface {
+        Output(string) error
+}
+
+// stdHandler is the default implementation of Handler.
+type stdHandler struct {
+        outputType Type
+}
+
+// NewHandler creates a new Handler instance with the specified output type.
+// Parameters:
+//   - outputType: The type of output (clipboard or stdout).
+//
+// Returns:
+//   - *Handler: A new Handler instance.
+// NewHandler creates a new Handler instance with the specified output type.
+func NewHandler(outputType Type) Handler <span class="cov8" title="1">{
+        return &amp;stdHandler{outputType: outputType}
+}</span>
+
+// Output outputs the given value based on the handler's output type.
+// Parameters:
+//   - value: The value to be output.
+//
+// Returns:
+//   - error: Any error encountered during output.
+func (h *stdHandler) Output(value string) error <span class="cov8" title="1">{
+        debug.Log("Outputting value: %s", value)
+        switch h.outputType </span>{
+        case Clipboard:<span class="cov8" title="1">
+                return h.toClipboard(value)</span>
+        case Stdout:<span class="cov8" title="1">
+                return h.toStdout(value)</span>
+        default:<span class="cov8" title="1">
+                return fmt.Errorf("unknown output type: %s", h.outputType)</span>
+        }
+}
+
+// toClipboard copies the given value to the system clipboard.
+// Parameters:
+//   - value: The value to be copied to the clipboard.
+//
+// Returns:
+//   - error: Any error encountered during the clipboard operation.
+func (h *stdHandler) toClipboard(value string) error <span class="cov8" title="1">{
+        debug.Log("Copying to clipboard: %s", value)
+        if err := clipboard.Init(); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to initialize clipboard: %v", err)
+        }</span>
+        <span class="cov8" title="1">clipboard.Write(clipboard.FmtText, []byte(value))
+        return nil</span>
+}
+
+// toStdout prints the given value to the standard output.
+// Parameters:
+//   - value: The value to be printed to stdout.
+//
+// Returns:
+//   - error: Any error encountered during the stdout operation.
+func (h *stdHandler) toStdout(value string) error <span class="cov8" title="1">{
+        debug.Log("Printing to stdout: %s", value)
+        fmt.Println(value)
+        return nil
+}</span>
+
+// IsValidType checks if the provided output type is valid.
+// Parameters:
+//   - outputType: The output type to check.
+//
+// Returns:
+//   - bool: True if the output type is valid, false otherwise.
+func IsValidType(outputType string) bool <span class="cov8" title="1">{
+        switch Type(outputType) </span>{
+        case Clipboard, Stdout:<span class="cov8" title="1">
+                return true</span>
+        default:<span class="cov8" title="1">
+                return false</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package search
+
+import (
+        "fmt" // Hinzugefügt für Debug-Logs
+        "os"
+        "path/filepath"
+        "strings"
+
+        "github.com/tobischo/gokeepasslib/v3"
+
+        "kpasscli/src/debug"
+)
+
+// FinderInterface abstracts the Find method for testability
+type FinderInterface interface {
+        Find(query string) ([]Result, error)
+        // Optionally, add Options field if needed for tests
+}
+
+// Result represents the outcome of a search operation.
+// It contains the path to the found entry and a pointer to the entry itself.
+type Result struct {
+        Path  string
+        Entry *gokeepasslib.Entry
+}
+
+var verify bool
+
+// Enable sets the debug logging flag to true.
+func EnableVerify() <span class="cov8" title="1">{
+        verify = true
+}</span>
+
+// GetField returns the value of the specified field from the entry
+func (r *Result) GetField(fieldName string) (string, error) <span class="cov8" title="1">{
+        for _, v := range r.Entry.Values </span><span class="cov8" title="1">{
+                if strings.EqualFold(v.Key, fieldName) </span><span class="cov8" title="1">{
+                        return v.Value.Content, nil
+                }</span>
+        }
+        <span class="cov8" title="1">return "", fmt.Errorf("field '%s' not found", fieldName)</span>
+}
+
+// SearchOptions defines the search behavior
+type SearchOptions struct {
+        CaseSensitive bool
+        ExactMatch    bool
+}
+
+// Finder handles searching through the KeePass database
+type Finder struct {
+        db      *gokeepasslib.Database
+        Options SearchOptions // Add Options field to Finder struct
+}
+
+// NewFinder creates a new Finder instance with default options
+func NewFinder(db *gokeepasslib.Database) *Finder <span class="cov8" title="1">{
+        return &amp;Finder{
+                db:      db,
+                Options: DefaultSearchOptions(),
+        }
+}</span>
+
+// DefaultSearchOptions returns the default search options
+func DefaultSearchOptions() SearchOptions <span class="cov8" title="1">{
+        return SearchOptions{
+                CaseSensitive: false, // Case-insensitive by default
+                ExactMatch:    false, // Partial matching by default
+        }
+}</span>
+
+// Find searches for entries in the KeePass database.
+// Parameters:
+//
+//        query: Search query, can be absolute path, relative path, or entry name
+//
+// Returns:
+//
+//        []Result: Array of matching entries with their paths
+//        error: Any error encountered during search
+func (f *Finder) Find(query string) ([]Result, error) <span class="cov8" title="1">{
+        debug.Log("Starting search for query: %s", query) // Debug-Log hinzugefügt
+        var results []Result
+
+        if strings.HasPrefix(query, "/") </span><span class="cov8" title="1">{
+                // Absolute path search
+                entry, err := f.findByAbsolutePath(query)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("absolute path search failed: %w", err)
+                }</span>
+                <span class="cov8" title="1">if entry != nil </span><span class="cov8" title="1">{
+                        results = append(results, Result{Path: query, Entry: entry})
+                }</span>
+        } else<span class="cov8" title="1"> if strings.Contains(query, "/") </span><span class="cov8" title="1">{
+                // Subpath search
+                var err error
+                results, err = f.findBySubpath(query)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("subpath search failed: %w", err)
+                }</span>
+        } else<span class="cov8" title="1"> {
+                // Name search
+                var err error
+                results, err = f.findByName(query)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("name search failed: %w", err)
+                }</span>
+        }
+        // Wenn genau ein Eintrag gefunden wurde, gib den vollständigen Pfad aus
+        <span class="cov8" title="1">if verify &amp;&amp; len(results) == 1 </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, "Found one entry: %s\n", results[0].Path)
+        }</span>
+        <span class="cov8" title="1">return results, nil</span>
+}
+
+// findByAbsolutePath finds an entry using an absolute path.
+// Parameters:
+//
+//        path: Absolute path starting with "/"
+//
+// Returns:
+//
+//        *gokeepasslib.Entry: The found entry or nil
+//        error: Any error encountered during search
+func (f *Finder) findByAbsolutePath(path string) (*gokeepasslib.Entry, error) <span class="cov8" title="1">{
+        debug.Log("Searching by absolute path: %s", path) // Debug-Log hinzugefügt
+        parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
+        if len(parts) == 0 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("empty path")
+        }</span>
+        <span class="cov8" title="1">if parts[0] == "" </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid path format")
+        }</span>
+
+        <span class="cov8" title="1">currentGroup := &amp;f.db.Content.Root.Groups[0]
+
+        // Navigate through groups
+        for i := 1; i &lt; len(parts)-1; i++ </span><span class="cov8" title="1">{ // i starts from 1 to include the root group
+                found := false
+                for _, group := range currentGroup.Groups </span><span class="cov8" title="1">{
+                        if group.Name == parts[i] </span><span class="cov8" title="1">{
+                                currentGroup = &amp;group
+                                found = true
+                                break</span>
+                        }
+                }
+                <span class="cov8" title="1">if !found </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("group not found: %s", parts[i])
+                }</span>
+        }
+
+        // Search for entry in final group
+        <span class="cov8" title="1">targetName := parts[len(parts)-1]
+        for _, entry := range currentGroup.Entries </span><span class="cov8" title="1">{
+                var title string
+                for _, v := range entry.Values </span><span class="cov8" title="1">{
+                        if v.Key == "Title" </span><span class="cov8" title="1">{
+                                title = v.Value.Content
+                                break</span>
+                        }
+                }
+                <span class="cov8" title="1">if title == targetName </span><span class="cov8" title="1">{
+                        return &amp;entry, nil
+                }</span>
+        }
+
+        <span class="cov0" title="0">return nil, fmt.Errorf("entry not found: %s", targetName)</span>
+}
+
+// findBySubpath searches for entries matching a relative path pattern.
+// The search is performed recursively through all groups in the database.
+// Parameters:
+//
+//        query: Relative path pattern (e.g., "Banking/Account")
+//
+// Returns:
+//
+//        []Result: Array of matching entries with their full paths
+//        error: Any error encountered during search
+func (f *Finder) findBySubpath(query string) ([]Result, error) <span class="cov8" title="1">{
+        debug.Log("Searching by subpath: %s", query) // Debug-Log hinzugefügt
+        parts := strings.Split(query, "/")
+        if len(parts) &lt; 2 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid subpath query: must contain at least one '/'")
+        }</span>
+
+        <span class="cov8" title="1">var results []Result
+        targetName := parts[len(parts)-1] // Last component is the entry name
+        subPath := parts[:len(parts)-1]   // Other components form the path
+
+        // Use finder options instead of default search options
+        opts := f.Options
+        // opts.ExactMatch = false // Exact match for subpath search
+
+        debug.Log("Starting subpath search for query: %s", query)
+        debug.Log("Subpath: %v, TargetName: %s", subPath, targetName)
+
+        // Start recursive search from root group
+        // currentPath := "/" + f.db.Content.Root.Groups[0].Name
+        err := f.searchGroupForSubpath(&amp;f.db.Content.Root.Groups[0], "/", subPath, targetName, &amp;results, opts)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("subpath search failed: %w", err)
+        }</span>
+        // Filter results by query string
+        <span class="cov8" title="1">filteredResults := []Result{}
+        for _, result := range results </span><span class="cov8" title="1">{
+                if strings.Contains(result.Path, query) </span><span class="cov8" title="1">{
+                        filteredResults = append(filteredResults, result)
+                }</span>
+        }
+        <span class="cov8" title="1">results = filteredResults
+
+        return results, nil</span>
+}
+
+// searchGroupForSubpath recursively searches through groups for matching paths.
+// Parameters:
+//
+//        group: Current group being searched
+//        currentPath: Full path to current group
+//        searchPath: Remaining path components to match
+//        targetName: Name of the entry to find
+//        results: Slice to collect matching results
+//        opts: Search options controlling matching behavior
+func (f *Finder) searchGroupForSubpath(
+        group *gokeepasslib.Group,
+        currentPath string,
+        searchPath []string,
+        targetName string,
+        results *[]Result,
+        opts SearchOptions,
+) error <span class="cov8" title="1">{
+        debug.Log("Searching group: %s, CurrentPath: %s, SearchPath: %v, TargetName: %s", group.Name, currentPath, searchPath, targetName)
+        // Build the full path for the current group
+        groupPath := currentPath
+        if group.Name != "" </span><span class="cov8" title="1">{
+                groupPath = filepath.Join(groupPath, group.Name)
+        }</span>
+        <span class="cov8" title="1">debug.Log("Updated groupPath: %s", groupPath)
+
+        // If we're at the target depth (matched all path components)
+        if len(searchPath) == 1 </span><span class="cov8" title="1">{
+                debug.Log("At target depth, searching for entries in group: %s", group.Name)
+                // Search for entries with matching name in this group
+                for _, entry := range group.Entries </span><span class="cov8" title="1">{
+                        var title string
+                        for _, v := range entry.Values </span><span class="cov8" title="1">{
+                                debug.Log("### v: %v", v)
+                                if v.Key == "Title" </span><span class="cov8" title="1">{
+                                        title = v.Value.Content
+                                        break</span>
+                                }
+                        }
+                        <span class="cov8" title="1">debug.Log("Checking entry: %s against target: %s", title, targetName)
+                        // debug.Log("opts: %+v", opts)
+                        if matchesName(title, targetName, opts) </span><span class="cov8" title="1">{
+                                fullPath := filepath.Join(groupPath, title)
+                                *results = append(*results, Result{
+                                        Path:  "/" + fullPath, // Ensure path starts with /
+                                        Entry: &amp;entry,
+                                })
+                                debug.Log("Found matching entry: %s", fullPath)
+                        }</span> else<span class="cov0" title="0"> {
+                                debug.Log("Entry %s does not match target %s", title, targetName)
+                        }</span>
+                }
+        }
+
+        // If there are more path components to match
+        <span class="cov8" title="1">if len(searchPath) &gt; 0 </span><span class="cov8" title="1">{
+                debug.Log("More path components to match, remaining searchPath: %v", searchPath)
+                // Check if current group matches the next path component
+                if matchesName(group.Name, searchPath[0], opts) </span><span class="cov8" title="1">{
+                        debug.Log("Group name %s matches searchPath component %s", group.Name, searchPath[0])
+                        // Recursively search subgroups with remaining path components
+                        for i := range group.Groups </span><span class="cov0" title="0">{
+                                err := f.searchGroupForSubpath(&amp;group.Groups[i], groupPath, searchPath[1:], targetName, results, opts)
+                                if err != nil </span><span class="cov0" title="0">{
+                                        return err
+                                }</span>
+                        }
+                } else<span class="cov8" title="1"> {
+                        debug.Log("Group name %s does not match searchPath component %s", group.Name, searchPath[0])
+                }</span>
+        }
+
+        // Always search all subgroups for potential matches
+        // This allows finding matches even if intermediate path components don't match exactly
+        <span class="cov8" title="1">debug.Log("Searching all subgroups for potential matches in group: %s", group.Name)
+        for i := range group.Groups </span><span class="cov8" title="1">{
+                err := f.searchGroupForSubpath(&amp;group.Groups[i], groupPath, searchPath, targetName, results, opts)
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// matchesName checks if two strings match according to the search options
+// matchesName checks if a given value matches a pattern based on the provided search options.
+// It supports both case-sensitive and case-insensitive comparisons, as well as exact and partial matches.
+//
+// Parameters:
+//   - value: The string to be searched.
+//   - pattern: The string pattern to search for.
+//   - opts: SearchOptions struct containing the following fields:
+//   - CaseSensitive: A boolean indicating if the match should be case-sensitive.
+//   - ExactMatch: A boolean indicating if the match should be exact.
+//
+// Returns:
+//   - A boolean indicating whether the value matches the pattern based on the search options.
+func matchesName(value, pattern string, opts SearchOptions) bool <span class="cov8" title="1">{
+        // debug.Log("Matching value: %s against pattern: %s with options: %+v", value, pattern, opts)
+        if opts.CaseSensitive </span><span class="cov8" title="1">{
+                if opts.ExactMatch </span><span class="cov8" title="1">{
+                        res := value == pattern
+                        debug.Log("Case-sensitive exact match: %s against pattern: %s with options: %+v, result: %v", value, pattern, opts, res)
+                        return res
+                }</span>
+                <span class="cov0" title="0">res := strings.Contains(value, pattern)
+                debug.Log("Case-sensitive unexact match:%s against pattern: %s with options: %+v, result: %v", value, pattern, opts, res)
+                return res</span>
+        }
+
+        // Case-insensitive comparison
+        <span class="cov8" title="1">valueLower := strings.ToLower(value)
+        patternLower := strings.ToLower(pattern)
+
+        if opts.ExactMatch </span><span class="cov8" title="1">{
+                res := value == pattern
+                debug.Log("Exact match: %s against pattern: %s with options: %+v, result: %v", value, pattern, opts, res)
+                return res
+        }</span>
+        <span class="cov8" title="1">res := strings.Contains(valueLower, patternLower)
+        debug.Log("Unexact match: %s against pattern: %s with options: %+v, result: %v", value, pattern, opts, res)
+        return res</span>
+}
+
+// findByName searches for entries by their name within the database.
+// It performs an exact match search based on the provided query string.
+//
+// Parameters:
+//   - query: The name to search for.
+//
+// Returns:
+//   - A slice of Result containing the search results.
+//   - An error if the search operation fails.
+//
+// Example usage:
+//
+//        results, err := finder.findByName("exampleName")
+//        if err != nil {
+//            log.Fatalf("Search failed: %v", err)
+//        }
+//        for _, result := range results {
+//            fmt.Println(result)
+//        }
+func (f *Finder) findByName(query string) ([]Result, error) <span class="cov8" title="1">{
+        debug.Log("Searching by name: %s", query) // Debug-Log hinzugefügt
+        var results []Result
+        opts := f.Options
+        // opts.ExactMatch = false // Exact match for name search
+
+        // Start recursive search from root group
+        err := f.searchGroupForName(&amp;f.db.Content.Root.Groups[0], "", query, &amp;results, opts)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("name search failed: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return results, nil</span>
+}
+
+// searchGroupForName searches for entries with a matching name within a given group and its subgroups.
+// It appends the results to the provided results slice.
+//
+// Parameters:
+//
+//        group - The group to search within.
+//        currentPath - The current path of the group being searched.
+//        targetName - The name to search for within the group's entries.
+//        results - A pointer to a slice where the search results will be appended.
+//        opts - Options for customizing the search behavior.
+//
+// Returns:
+//
+//        An error if the search encounters an issue, otherwise nil.
+func (f *Finder) searchGroupForName(
+        group *gokeepasslib.Group,
+        currentPath string,
+        targetName string,
+        results *[]Result,
+        opts SearchOptions,
+) error <span class="cov8" title="1">{
+        debug.Log("Searching group: %s, CurrentPath: %s, TargetName: %s", group.Name, currentPath, targetName) // Debug-Log hinzugefügt
+        // Build the full path for the current group
+        groupPath := currentPath
+        if group.Name != "" </span><span class="cov8" title="1">{
+                if groupPath == "" </span><span class="cov8" title="1">{
+                        groupPath = group.Name
+                }</span> else<span class="cov8" title="1"> {
+                        groupPath = filepath.Join(groupPath, group.Name)
+                }</span>
+        }
+
+        // Search for entries with matching name in this group
+        <span class="cov8" title="1">for _, entry := range group.Entries </span><span class="cov8" title="1">{
+                var title string
+                for _, v := range entry.Values </span><span class="cov8" title="1">{
+                        if v.Key == "Title" </span><span class="cov8" title="1">{
+                                title = v.Value.Content
+                                break</span>
+                        }
+                }
+                <span class="cov8" title="1">if matchesName(title, targetName, opts) </span><span class="cov8" title="1">{
+                        fullPath := filepath.Join(groupPath, title)
+                        *results = append(*results, Result{
+                                Path:  "/" + fullPath, // Ensure path starts with /
+                                Entry: &amp;entry,
+                        })
+                }</span>
+        }
+
+        // Recursively search subgroups
+        <span class="cov8" title="1">for i := range group.Groups </span><span class="cov8" title="1">{
+                err := f.searchGroupForName(&amp;group.Groups[i], groupPath, targetName, results, opts)
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

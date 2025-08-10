@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"flag"
+
 	"kpasscli/src/doc"
 )
 
@@ -17,6 +18,8 @@ import (
 // -man | -m: Show manual page
 // -help | -h: Show help message
 // -debug | -d: Enable debug logging
+// -config | -c path: Path to configuration file (default: ~/.config/kpasscli/config.yaml)
+// -verify | -v: Enable verify messages
 // -create-config | -cc: Create an example config file
 // -print-config | -pc: print the current detected config to stdout
 
@@ -37,54 +40,62 @@ type Flags struct {
 	PrintConfig   bool
 }
 
-func ParseFlags() *Flags {
+// ParseFlags parses flags from the provided FlagSet and args. For production, use ParseFlagsDefault().
+func ParseFlags(fs *flag.FlagSet, args []string) *Flags {
 	flags := &Flags{}
+	fs.StringVar(&flags.KdbPath, "kdbpath", "", "Path to KeePass database file")
+	fs.StringVar(&flags.KdbPath, "p", "", "Path to KeePass database file (shorthand)")
 
-	// Define flags with both long and short versions
-	flag.StringVar(&flags.KdbPath, "kdbpath", "", "Path to KeePass database file")
-	flag.StringVar(&flags.KdbPath, "p", "", "Path to KeePass database file (shorthand)")
+	fs.StringVar(&flags.KdbPassword, "kdbpassword", "", "Password file or executable to get password")
+	fs.StringVar(&flags.KdbPassword, "w", "", "Password file or executable to get password (shorthand)")
 
-	flag.StringVar(&flags.KdbPassword, "kdbpassword", "", "Password file or executable to get password")
-	flag.StringVar(&flags.KdbPassword, "w", "", "Password file or executable to get password (shorthand)")
+	fs.StringVar(&flags.Item, "item", "", "Item to search for")
+	fs.StringVar(&flags.Item, "i", "", "Item to search for (shorthand)")
 
-	flag.StringVar(&flags.Item, "item", "", "Item to search for")
-	flag.StringVar(&flags.Item, "i", "", "Item to search for (shorthand)")
+	fs.StringVar(&flags.FieldName, "fieldname", "Password", "Field name to retrieve")
+	fs.StringVar(&flags.FieldName, "f", "Password", "Field name to retrieve (shorthand)")
 
-	flag.StringVar(&flags.FieldName, "fieldname", "Password", "Field name to retrieve")
-	flag.StringVar(&flags.FieldName, "f", "Password", "Field name to retrieve (shorthand)")
+	fs.StringVar(&flags.Out, "out", "", "Output type (clipboard/stdout)")
+	fs.StringVar(&flags.Out, "o", "", "Output type (clipboard/stdout) (shorthand)")
 
-	flag.StringVar(&flags.Out, "out", "", "Output type (clipboard/stdout)")
-	flag.StringVar(&flags.Out, "o", "", "Output type (clipboard/stdout) (shorthand)")
+	fs.BoolVar(&flags.CaseSensitive, "case-sensitive", false, "Enable case-sensitive search")
+	fs.BoolVar(&flags.CaseSensitive, "cs", false, "Enable case-sensitive search (shorthand)")
 
-	flag.BoolVar(&flags.CaseSensitive, "case-sensitive", false, "Enable case-sensitive search")
-	flag.BoolVar(&flags.CaseSensitive, "cs", false, "Enable case-sensitive search (shorthand)")
+	fs.BoolVar(&flags.ExactMatch, "exact-match", false, "Enable exact match search")
+	fs.BoolVar(&flags.ExactMatch, "e", false, "Enable exact match search (shorthand)")
 
-	flag.BoolVar(&flags.ExactMatch, "exact-match", false, "Enable exact match search")
-	flag.BoolVar(&flags.ExactMatch, "e", false, "Enable exact match search (shorthand)")
+	fs.BoolVar(&flags.ShowMan, "man", false, "Show manual page")
+	fs.BoolVar(&flags.ShowMan, "m", false, "Show manual page (shorthand)")
 
-	flag.BoolVar(&flags.ShowMan, "man", false, "Show manual page")
-	flag.BoolVar(&flags.ShowMan, "m", false, "Show manual page (shorthand)")
+	fs.BoolVar(&flags.ShowHelp, "help", false, "Show help message")
+	fs.BoolVar(&flags.ShowHelp, "h", false, "Show help message (shorthand)")
 
-	flag.BoolVar(&flags.ShowHelp, "help", false, "Show help message")
-	flag.BoolVar(&flags.ShowHelp, "h", false, "Show help message (shorthand)")
+	fs.BoolVar(&flags.VerifyFlag, "verify", false, "Enable verify message")
+	fs.BoolVar(&flags.VerifyFlag, "v", false, "Enable verify message (shorthand)")
 
-	flag.BoolVar(&flags.VerifyFlag, "verify", false, "Enable verify message")
-	flag.BoolVar(&flags.VerifyFlag, "v", false, "Enable verify message (shorthand)")
+	fs.BoolVar(&flags.DebugFlag, "debug", false, "Enable debug logging")
+	fs.BoolVar(&flags.DebugFlag, "d", false, "Enable debug logging (shorthand)")
 
-	flag.BoolVar(&flags.DebugFlag, "debug", false, "Enable debug logging")
-	flag.BoolVar(&flags.DebugFlag, "d", false, "Enable debug logging (shorthand)")
+	fs.BoolVar(&flags.CreateConfig, "create-config", false, "Create an example config file")
+	fs.BoolVar(&flags.CreateConfig, "cc", false, "Create an example config file (shorthand)")
 
-	flag.BoolVar(&flags.CreateConfig, "create-config", false, "Create an example config file")
-	flag.BoolVar(&flags.CreateConfig, "cc", false, "Create an example config file (shorthand)")
+	fs.BoolVar(&flags.PrintConfig, "print-config", false, "Print current configuration")
+	fs.BoolVar(&flags.PrintConfig, "pc", false, "Print current configuration (shorthand)")
 
-	flag.BoolVar(&flags.PrintConfig, "print-config", false, "Print current configuration")
-	flag.BoolVar(&flags.PrintConfig, "pc", false, "Print current configuration (shorthand)")
+	fs.StringVar(&flags.ConfigPath, "config", "~/.config/kpasscli/config.yaml", "Path to configuration file")
+	fs.StringVar(&flags.ConfigPath, "c", "~/.config/kpasscli/config.yaml", "Path to configuration file (shorthand)")
 
-	flag.StringVar(&flags.ConfigPath, "config", "~/.config/kpasscli/config.yaml", "Path to configuration file")
-	flag.StringVar(&flags.ConfigPath, "c", "~/.config/kpasscli/config.yaml", "Path to configuration file (shorthand)")
-
-	flag.Usage = doc.ShowHelp
-	flag.Parse()
-
+	fs.Usage = doc.ShowHelp
+	fs.Parse(args) // Parse the flags from the provided args. This is implemented to test the ParseFlags function.
 	return flags
+}
+
+// ParseFlagsDefault parses flags from the global flag.CommandLine and os.Args[1:].
+// This is the default function to use in production.
+// It sets up the flags and returns the parsed Flags struct.
+// It also sets the usage function to show help documentation.
+// It is typically called in the main function of the application.
+// It initializes the logging, handles special flags, and exits the program if necessary.
+func ParseFlagsDefault() *Flags {
+	return ParseFlags(flag.CommandLine, nil)
 }

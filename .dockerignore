@@ -3,4 +3,5 @@
 /archive
 /old-version
 /dist/kpasscli*
+go
 /build

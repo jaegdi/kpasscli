@@ -3,6 +3,7 @@ package debug
 import (
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -14,6 +15,14 @@ var enabled bool
 // Enable sets the debug logging flag to true.
 func Enable() {
 	enabled = true
+}
+
+// Optimized error handling with centralized error reporting
+func ErrMsg(err error, msg string) {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR %s: %v\n", msg, err)
+		os.Exit(1)
+	}
 }
 
 // Log logs a debug message if debug logging is enabled.

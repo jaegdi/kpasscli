@@ -14,26 +14,36 @@ RUN yum install -y \
     && yum clean all
 
 # Install Go manually
-ENV GO_VERSION=1.23.7
+ENV GO_VERSION=1.24.2
 RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz && \
     rm go${GO_VERSION}.linux-amd64.tar.gz
-
+    
 ENV PATH="/usr/local/go/bin:${PATH}"
 
-# Set the working directory
-WORKDIR /app
 
+WORKDIR /app
 # Copy the source code into the container
 COPY . .
-RUN rm go.mod go.sum \
-    && go mod init kpasscli
+RUN rm -rf /app/go
+RUN mkdir -p /app && chown -R 1000:1000 /app \
+    && rm -rf /app/go
 
-# Build the kpasscli binary with updated C99 and GCC flags
-ENV CGO_CFLAGS="-std=c99 -Wno-implicit-function-declaration" \
-    CGO_ENABLED=0
-RUN go mod tidy \
+USER 1000
+# Set the working directory
+ENV HOME=/app \
+    CGO_CFLAGS="-std=c99 -Wno-implicit-function-declaration" \
+    CGO_ENABLED=0 \
+    GOCACHE="/tmp/go-build-cache" \
+    PATH="$PATH:/app/dist"
+    
+RUN mkdir -p /app/.config/kpasscli \
+ && cp config.yaml /app/.config/kpasscli/config.yaml
+
+RUN rm -f go.mod go.sum \
+ && go mod init kpasscli \
+ && go mod tidy -go=${GO_VERSION}\
  && go build -v -o dist
 
-# Set the entrypoint to the built binary
+# Set the entrypoint to the kpasscli binary
 ENTRYPOINT ["/app/dist/kpasscli"]
