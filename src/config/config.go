@@ -18,6 +18,7 @@ type Config struct {
 	PasswordFile       string `yaml:"password_file"`
 	PasswordExecutable string `yaml:"password_executable"`
 	ConfigfilePath     string `yaml:"configfile_path"`
+	OutputFormat       string `yaml:"output_format"`
 }
 
 // Load reads and parses the configuration file.
@@ -51,12 +52,15 @@ func Load(configPath string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	debug.Log("Loaded data: %v\n", string(data))
 	var config Config
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, err
 	}
-	config.ConfigfilePath = configPath
-	debug.Log("Loaded config: %+v\n", config)
+	// config.ConfigfilePath = configPath
+	y, _ := yaml.Marshal(config)
+	debug.Log("Loaded config: %v\n", string(y))
+	config.OutputFormat = "text"
 	return &config, nil
 }
 

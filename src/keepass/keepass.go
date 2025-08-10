@@ -8,10 +8,11 @@ import (
 	"syscall"
 
 	"github.com/tobischo/gokeepasslib/v3"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 
 	"kpasscli/src/config"
 	"kpasscli/src/debug"
+	"kpasscli/src/search"
 )
 
 // OpenDatabase opens and decodes a KeePass database file.
@@ -88,11 +89,12 @@ func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string, pr
 		return getPasswordFromPrompt()
 	}
 	// Resolve environment variables in passfile
-	passfile = os.ExpandEnv(passfile)
-	debug.Log(passfile)
+	// passfile = os.ExpandEnv(passfile)
+	debug.Log("PassFile: %v", passfile)
 
 	// Check if passfile is an executable in $PATH
 	if execPath, err := exec.LookPath(passfile); err == nil {
+		debug.Log("passfile: %v is an executable: %v", passfile, execPath)
 		passfile = execPath
 	}
 	info, err := os.Stat(passfile)
@@ -100,7 +102,7 @@ func ResolvePassword(passParam string, cfg *config.Config, kdbpassenv string, pr
 		debug.Log("passfile: %v Error: %v", passfile, err.Error())
 		return "", fmt.Errorf("password must be provided via file or executable")
 	}
-	debug.Log("%v", info)
+	debug.Log("%+v", info)
 
 	if info.Mode()&os.ModeNamedPipe != 0 {
 		// Read password from process substitution
@@ -151,7 +153,7 @@ func getPasswordFromPrompt() (string, error) {
 	// If no valid file or executable is found, prompt the user for the password
 	fmt.Print("Enter password: ")
 	var password string
-	passwordBytes, err := terminal.ReadPassword(int(syscall.Stdin))
+	passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 	}
 	password = strings.TrimSpace(string(passwordBytes))
@@ -187,4 +189,43 @@ func ResolveDatabasePath(flagPath string, cfg *config.Config) string {
 		return cfg.DatabasePath
 	}
 	return ""
+}
+
+// GetAllFields finds a specific entry by path and displays all its fields.
+func GetAllFields(db *gokeepasslib.Database, config *config.Config, itemPath string) error {
+	finder := search.NewFinder(db)
+	// Rename the variable to 'results' to better reflect its type ([]search.Result)
+	results, err := finder.Find(itemPath)
+	if err != nil {
+		// Wrap the error for better context
+		return fmt.Errorf("error finding entry '%s': %w", itemPath, err)
+	}
+
+	// Handle cases based on the number of results found
+	if len(results) == 0 {
+		return fmt.Errorf("entry not found: %s", itemPath)
+	}
+
+	if len(results) > 1 {
+		// More than one entry found, which is ambiguous for showing all fields.
+		// You might want to list the paths found instead.
+		var foundPaths []string
+		for _, res := range results {
+			foundPaths = append(foundPaths, res.Path)
+		}
+		return fmt.Errorf("multiple entries found for '%s', please specify a unique path: %s", itemPath, strings.Join(foundPaths, ", "))
+	}
+
+	// Exactly one result found. Access the Entry field from the first element.
+	// The 'Entry' field within search.Result is the *gokeepasslib.Entry we need.
+	singleEntry := results[0].Entry
+
+	// It's good practice to check if the Entry pointer is nil, although Find should ideally populate it.
+	if singleEntry == nil {
+		return fmt.Errorf("found result for '%s', but entry data is unexpectedly nil", itemPath)
+	}
+
+	// Now pass the correct type (*gokeepasslib.Entry) to ShowAllFields
+	output.ShowAllFields(singleEntry, *config)
+	return nil
 }

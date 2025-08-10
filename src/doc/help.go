@@ -10,10 +10,13 @@ func ShowHelp() {
 Options:
     -kdbpath | -p path      Path to KeePass database file
     -kdbpassword | -w path  Path to password file or executable, if not given asks for password interactively
+    -config | -c            Path to config file
     -item | -i name         Entry to search for
+    -all | -a               Show all entries of the specified item
     -fieldname | -f field   Field to retrieve (default: Password)
     -out | -o type          Output type (stdout/clipboard)
-    -case-sensitive | -c    Enable case-sensitive search
+    -clear-after | -ca      Clear clipboard after N seconds ( default is 20sec, 0=disable, only active if output is clipboard)
+    -case-sensitive | -cs   Enable case-sensitive search
     -exact-match | -e       Enable exact match search
     -config | -c path       Path to configuration file (default: ~/.config/kpasscli/config.yaml)
     -create-config | -cc    Create an example config file
@@ -31,18 +34,24 @@ Example:
     then it's enough to specify the item and my be the fieldname.
 
     # for password
-    kpasscli -i=/Personal/Banking/Account
+    kpasscli -i /Personal/Banking/Account
 
     # or if Account is uniq in the keepass-db
-    kasscli -i=Account
+    kasscli -i Account
+
+    # output passwort to clipboard an clear clipboard after 20 seconds
+    kpasscli -i /Personal/Banking/Account -o clipboard -ca 20
 
     # To verify, if the right item was found, you can use the -verify flag
-    kpasscli -i=Account -v
+    kpasscli -i Account -v
 
     # for username
-    kasscli -i=/Personal/Banking/Account -f=UserName
+    kasscli -i /Personal/Banking/Account -f UserName
 
-For more information, use -man|-m
+    # to show all entries of the specified item
+    kasscli -i /Personal/Banking/Account -a
+
+For more information, use -man | -m
 
 AUTHOR
 	Dirk Jäger

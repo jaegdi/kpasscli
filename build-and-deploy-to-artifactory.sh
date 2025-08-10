@@ -13,6 +13,8 @@ go build -v -o dist/kpasscli
 echo "Build windows binary of kpasscli"
 GOOS=windows GOARCH=amd64 go build -v -o dist/kpasscli.exe
 
+exit
+
 if dist/kpasscli -h > /dev/null; then
     echo "Push to artifactory"
 

@@ -30,6 +30,7 @@ type Flags struct {
 	FieldName     string
 	Out           string
 	ConfigPath    string
+	ClearAfter    int
 	CaseSensitive bool
 	ExactMatch    bool
 	ShowMan       bool
@@ -38,6 +39,7 @@ type Flags struct {
 	VerifyFlag    bool
 	CreateConfig  bool
 	PrintConfig   bool
+	ShowAll       bool
 }
 
 // ParseFlags parses flags from the provided FlagSet and args. For production, use ParseFlagsDefault().

@@ -126,8 +126,4 @@ func resolveOutputType(flagOut string, cfg *config.Config) output.Type {
 			return output.Type(kpcliout)
 		}
 	}
-	if cfg != nil && cfg.DefaultOutput != "" {
-		return output.Type(cfg.DefaultOutput)
-	}
-	return output.Stdout
 }
