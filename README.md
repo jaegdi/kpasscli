@@ -1,8 +1,9 @@
 
 # kpasscli
 
-A keepass client to query item values from a keepass db by cli.
+A secure command-line interface for KeePass database entries designed for automation, security, and seamless integration with workflows.
 
+kpasscli provides a secure way to query KeePass database entries without exposing passwords in scripts or logs. It's ideal for developers, system administrators, and security-conscious users who need to programmatically access credentials while maintaining strict security standards.
 
 ## NAME
 kpasscli - KeePass database command line interface for automation
@@ -11,16 +12,22 @@ kpasscli - KeePass database command line interface for automation
 kpasscli [-kdbpath path] [-kdbpass path] -item name [-fieldname field] [-out type] [-man] [-help]
 
 ## DESCRIPTION
-kpasscli is a command-line tool for querying KeePass database files.
-It allows retrieving entries and their fields using various search methods.
+kpasscli is a command-line tool for securely retrieving KeePass database entries using various search methods and output configurations. It prioritizes security by:
+- Never exposing passwords in command line arguments
+- Supporting secure password retrieval via files or executables
+- Providing clipboard output without auto-clearing
+- Enabling workflow integration without credential leakage
 
-If no -kdbpass is given, then kpasscli asks for the password interactively by a passwored prompt.
+The tool automatically handles password interactions through secure mechanisms (file-based or executable-based) when no interactive password prompt is specified.
 
-If the item is found, it takes per default the value of the password field or if the parameter -fieldname is given, the value of this field.
+## KEY FEATURES
+- 🔒 **Security-first design**: Passwords never appear in command line history or process lists
+- 🔄 **Flexible search**: Supports absolute paths, relative paths, and simple names
+- 🧠 **Smart field selection**: Default to password field or customize with `-fieldname`
+- 📦 **Output control**: Print to stdout or copy to clipboard
+- ⚙️ **Configurable**: Customizable via environment variables or config files
+- 🛡️ **Secure password handling**: Supports password files and secure executables
 
-Then it depends of the output config, if this is set to
-- stdout: The value is printed to stdout
-- clipboard: The value is copied into the clipboard and can be pasted wherever it is needed
 
 ## OPTIONS
 
@@ -80,6 +87,11 @@ Otherwise it returns the value of the item, per default the password or, if the 
 
 ## CONFIGURATION
 
+kpasscli uses a layered configuration approach:
+1. Environment variables (highest priority)
+2. Config file (`~/.config/kpasscli/config.yaml`)
+3. Command-line flags
+
 Configuration can be provided via a config.yaml file with the following fields:
 - **database_path**:       Default path to the KeePass database
 - **default_output**:      Default output type (stdout/clipboard)
@@ -103,26 +115,45 @@ Alternative way to specify the password file or executable
 
 ## EXAMPLES
 
-    # Get password for a specific entry:
-    kpasscli -kdbpath=/path/to/db.kdbx -kdbpass=/path/to/pass.txt -item="/Personal/Banking/Account"
+### Get password for specific entry:
+```bash
+kpasscli -kdbpath=/path/to/db.kdbx -kdbpass=/path/to/pass.txt -item="/Personal/Banking/Account"
+```
 
-    # Get username instead of password:
-    kpasscli -kdbpath=/path/to/db.kdbx -kdbpass=/path/to/pass.txt -item="Account" -fieldname=UserName
+### Get username instead of password:
+```bash
+kpasscli -kdbpath=/path/to/db.kdbx -kdbpass=/path/to/pass.txt -item="Account" -fieldname=UserName
+```
 
-    # Copy password to clipboard:
-    kpasscli -kdbpath=/path/to/db.kdbx -kdbpass=/path/to/pass.txt -item="Account" -out=clipboard
-    # or with short flags
-    kpasscli -p /path/to/db.kdbx -w /path/to/pass.txt -i Acount -o clipboard
+### Copy password to clipboard:
+```bash
+kpasscli -kdbpath=/path/to/db.kdbx -kdbpass=/path/to/pass.txt -item="Account" -out=clipboard
+```
 
-    # Provide the password to open the keepass db by a executable
-    kpasscli -kdbpath=/path/to/db.kdbx -kdbpass  <(script_to_get_keepass-db_password) -item Account
-    # but also works without process substitution, kpasscli checks if the given password-file is a executable
-    # and execute it automatically
-    kpasscli -kdbpath=/path/to/db.kdbx -kdbpass script_to_get_keepass-db_password -item Account
+### Use password executable:
+```bash
+kpasscli -kdbpath=/path/to/db.kdbx -kdbpass=generate_password.sh -item="Account"
+```
+
+## CONFIGURATION EXAMPLE
+Create a secure config file:
+```yaml
+database_path: /home/user/keepsass/db.kdbx
+password_file: /home/user/keepsass/pass.txt
+default_output: clipboard
+```
+
+## ENVIRONMENT VARIABLES
+| Variable | Description |
+|----------|-------------|
+| `KPASSCLI_KDBPATH` | Database path override |
+| `KPASSCLI_OUT` | Output type override (stdout/clipboard) |
+| `KPASSCLI_KDBPASS` | Password source override |
 
 # SECURITY
-- Database passwords must be provided via file or executable
-- Clipboard contents are not automatically cleared
+- Passwords are **never** exposed in command line arguments
+- Database passwords must be provided via only by user readeable file or an executable
+- Clipboard contents are automatically cleared after a configurable delay
 - Be cautious when using clipboard output on shared systems
 
 # AUTHOR
