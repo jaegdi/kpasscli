@@ -2,10 +2,14 @@ package search
 
 import (
 	"fmt" // Hinzugefügt für Debug-Logs
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+	"unicode"
 
+	"github.com/pquerna/otp/totp"
 	"github.com/tobischo/gokeepasslib/v3"
 
 	"kpasscli/src/debug"
@@ -43,6 +47,52 @@ func (r *Result) GetField(fieldName string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("field '%s' not found", fieldName)
+}
+
+func (r *Result) GetTotpToken(fieldName string) (string, error) {
+
+	rawSecret, err := r.GetField(fieldName)
+	if err != nil {
+		return "", fmt.Errorf("TOTP secret field '%s' not found: %w", fieldName, err)
+	}
+
+	// Trim whitespace
+	rawSecret = strings.TrimSpace(rawSecret)
+
+	// If it starts with otpauth://, parse the secret parameter
+	if strings.HasPrefix(rawSecret, "otpauth://") {
+		// Parse query parameters to extract secret
+		u, err := url.Parse(rawSecret)
+		if err != nil {
+			return "invalid otpauth URI", err
+		}
+
+		q := u.Query()
+		secret, ok := q["secret"]
+		if !ok || len(secret) == 0 {
+			return "", fmt.Errorf("no 'secret' parameter found in otpauth URI")
+		}
+
+		rawSecret = secret[0] // Take the first value
+	}
+
+	// Now clean the actual Base32 secret only
+	cleanedSecret := strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) || r == '\n' || r == '\r' || r == '\t' {
+			return -1 // remove
+		}
+		return unicode.ToUpper(r)
+	}, rawSecret)
+
+	if cleanedSecret == "" {
+		return "", fmt.Errorf("TOTP secret is empty after cleaning")
+	}
+
+	token, err := totp.GenerateCode(cleanedSecret, time.Now())
+	if err != nil {
+		return "", fmt.Errorf("Error generating TOTP token: %w (secret: '%s')", err, cleanedSecret)
+	}
+	return token, nil
 }
 
 var verify bool

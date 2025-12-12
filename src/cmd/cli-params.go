@@ -43,6 +43,7 @@ type Flags struct {
 	PasswordTotp   bool
 	TotpFlag       bool
 	ClearClipboard bool
+	Clipboard      bool
 }
 
 // ParseFlags parses command-line flags from the provided FlagSet and arguments.

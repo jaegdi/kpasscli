@@ -8,7 +8,6 @@ import (
 
 	"time"
 
-	"github.com/pquerna/otp/totp"
 	"github.com/tobischo/gokeepasslib/v3"
 	"golang.design/x/clipboard"
 
@@ -106,16 +105,21 @@ func RunApp(
 	handler := newHandler(outputType, clipboardService)
 
 	var value string
+	// var token string
 	if flags.TotpFlag {
-		totpSecret, err := results[0].GetField("TimeOtp-Secret-Base32")
+		// totpSecret, err := results[0].GetField("otp")
+		// println("totpSecret:", totpSecret)
+		// if err != nil {
+		// 	return fmt.Errorf("TOTP secret not found: %w", err)
+		// }
+		// token, err := totp.GenerateCode(totpSecret, time.Now())
+		// if err != nil {
+		// 	return fmt.Errorf("Error generating TOTP token: %w", err)
+		// }
+		value, err = results[0].GetTotpToken("otp")
 		if err != nil {
-			return fmt.Errorf("TOTP secret not found: %w", err)
+			return fmt.Errorf("Error getting field: %w", err)
 		}
-		token, err := totp.GenerateCode(totpSecret, time.Now())
-		if err != nil {
-			return fmt.Errorf("Error generating TOTP token: %w", err)
-		}
-		value = token
 	} else {
 		value, err = results[0].GetField(flags.FieldName)
 		if err != nil {
@@ -123,31 +127,15 @@ func RunApp(
 		}
 
 		if flags.PasswordTotp {
-			totpSecret, err := results[0].GetField("TimeOtp-Secret-Base32")
+			token, err := results[0].GetTotpToken("otp")
 			if err != nil {
-				// If the field is not found, we just don't append anything, or should we error?
-				// The request says "when it is defined in keepass". So if not defined, maybe just warn or ignore?
-				// "Add a cli param -pt to add the otp token to the end of the password when it is defined in keepass"
-				// Implies if not defined, maybe don't add it.
-				// But usually if I ask for it, I expect it.
-				// Let's log a debug message and proceed without it if missing, or maybe error?
-				// "when it is defined" suggests conditional.
-				debug.Log("TOTP secret not found: %v", err)
-			} else {
-				// Clean up the secret (remove spaces, etc if needed? Base32 usually needs to be clean)
-				// The library handles some cleaning but let's be safe?
-				// gokeepasslib usually returns raw string.
-				// pquerna/otp expects clean base32.
-				// Let's assume it's clean enough or the lib handles it.
-				token, err := totp.GenerateCode(totpSecret, time.Now())
-				if err != nil {
-					return fmt.Errorf("Error generating TOTP token: %w", err)
-				}
-				value = value + token
+				return fmt.Errorf("Error generating TOTP token: %w", err)
 			}
+			value = value + token
 		}
 	}
 
+	// Output the value of the requested item field
 	if err := handler.Output(value); err != nil {
 		return fmt.Errorf("Error outputting value: %w", err)
 	}
