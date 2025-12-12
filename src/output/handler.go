@@ -37,20 +37,42 @@ const (
 	StdoutType    OutputType = "stdout"
 )
 
+// ClipboardService defines the interface for clipboard operations
+type ClipboardService interface {
+	Init() error
+	Write(t clipboard.Format, content []byte) <-chan struct{}
+}
+
+// RealClipboard implements the ClipboardService interface using the actual system clipboard
+type RealClipboard struct{}
+
+func (c *RealClipboard) Init() error {
+	return clipboard.Init()
+}
+
+func (c *RealClipboard) Write(t clipboard.Format, content []byte) <-chan struct{} {
+	return clipboard.Write(t, content)
+}
+
 // stdHandler is the default implementation of Handler.
 type stdHandler struct {
 	outputType OutputType
+	clipboard  ClipboardService
 }
 
 // NewHandler creates a new Handler instance with the specified output type.
 //
 // Parameters:
 //   - outputType: The OutputType specifying how output should be handled (clipboard or stdout).
+//   - clipboard: The ClipboardService interface to use for clipboard operations.
 //
 // Returns:
 //   - Handler: A new Handler instance for the specified output type.
-func NewHandler(outputType OutputType) Handler {
-	return &stdHandler{outputType: outputType}
+func NewHandler(outputType OutputType, cb ClipboardService) Handler {
+	if cb == nil {
+		cb = &RealClipboard{}
+	}
+	return &stdHandler{outputType: outputType, clipboard: cb}
 }
 
 // Output outputs the given value based on the handler's output type.
@@ -79,10 +101,10 @@ func (h *stdHandler) Output(value string) error {
 //   - error: Any error encountered during the clipboard operation.
 func (h *stdHandler) toClipboard(value string) error {
 	debug.Log("Copying to clipboard: %s", value)
-	if err := clipboard.Init(); err != nil {
+	if err := h.clipboard.Init(); err != nil {
 		return fmt.Errorf("failed to initialize clipboard: %v", err)
 	}
-	clipboard.Write(clipboard.FmtText, []byte(value))
+	h.clipboard.Write(clipboard.FmtText, []byte(value))
 	return nil
 }
 

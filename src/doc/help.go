@@ -15,6 +15,8 @@ Options:
     -all | -a               Show all entries of the specified item
     -fieldname | -f field   Field to retrieve (default: Password)
     -out | -o type          Output type (stdout/clipboard)
+    -password-totp | -pt    Output TOTP password to the end of password field (default: false)
+    -totp | -t              Output TOTP token (default: false)
     -clear-after | -ca      Clear clipboard after N seconds ( default is 20sec, 0=disable, only active if output is clipboard)
     -case-sensitive | -cs   Enable case-sensitive search
     -exact-match | -e       Enable exact match search

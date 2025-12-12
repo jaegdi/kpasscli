@@ -24,22 +24,25 @@ import (
 // -print-config | -pc: print the current detected config to stdout
 
 type Flags struct {
-	KdbPath       string
-	KdbPassword   string
-	Item          string
-	FieldName     string
-	Out           string
-	ConfigPath    string
-	ClearAfter    int
-	CaseSensitive bool
-	ExactMatch    bool
-	ShowMan       bool
-	ShowHelp      bool
-	DebugFlag     bool
-	VerifyFlag    bool
-	CreateConfig  bool
-	PrintConfig   bool
-	ShowAll       bool
+	KdbPath        string
+	KdbPassword    string
+	Item           string
+	FieldName      string
+	Out            string
+	ConfigPath     string
+	ClearAfter     int
+	CaseSensitive  bool
+	ExactMatch     bool
+	ShowMan        bool
+	ShowHelp       bool
+	DebugFlag      bool
+	VerifyFlag     bool
+	CreateConfig   bool
+	PrintConfig    bool
+	ShowAll        bool
+	PasswordTotp   bool
+	TotpFlag       bool
+	ClearClipboard bool
 }
 
 // ParseFlags parses command-line flags from the provided FlagSet and arguments.
@@ -69,6 +72,9 @@ func ParseFlags(fs *flag.FlagSet, args []string) *Flags {
 	fs.StringVar(&flags.Out, "out", "", "Output type (clipboard/stdout)")
 	fs.StringVar(&flags.Out, "o", "", "Output type (clipboard/stdout) (shorthand)")
 
+	fs.IntVar(&flags.ClearAfter, "clear-after", 20, "Clear clipboard after N seconds")
+	fs.IntVar(&flags.ClearAfter, "ca", 20, "Clear clipboard after N seconds (shorthand)")
+
 	fs.BoolVar(&flags.CaseSensitive, "case-sensitive", false, "Enable case-sensitive search")
 	fs.BoolVar(&flags.CaseSensitive, "cs", false, "Enable case-sensitive search (shorthand)")
 
@@ -95,6 +101,14 @@ func ParseFlags(fs *flag.FlagSet, args []string) *Flags {
 
 	fs.StringVar(&flags.ConfigPath, "config", "~/.config/kpasscli/config.yaml", "Path to configuration file")
 	fs.StringVar(&flags.ConfigPath, "c", "~/.config/kpasscli/config.yaml", "Path to configuration file (shorthand)")
+
+	fs.BoolVar(&flags.PasswordTotp, "password-totp", false, "Append TOTP to password")
+	fs.BoolVar(&flags.PasswordTotp, "pt", false, "Append TOTP to password (shorthand)")
+
+	fs.BoolVar(&flags.TotpFlag, "totp", false, "Output TOTP token")
+	fs.BoolVar(&flags.TotpFlag, "t", false, "Output TOTP token (shorthand)")
+
+	fs.BoolVar(&flags.ClearClipboard, "clear-clipboard", false, "Clear clipboard (internal use)")
 
 	fs.Usage = doc.ShowHelp
 	fs.Parse(args) // Parse the flags from the provided args. This is implemented to test the ParseFlags function.

@@ -35,7 +35,7 @@ func TestStdHandler_Output_UnknownType(t *testing.T) {
 
 // The following tests are for coverage only; they do not test clipboard or stdout side effects.
 func TestStdHandler_toClipboard(t *testing.T) {
-	h := &stdHandler{outputType: ClipboardType}
+	h := &stdHandler{outputType: ClipboardType, clipboard: &RealClipboard{}}
 	// We expect an error or nil, but do not check clipboard contents.
 	_ = h.toClipboard("test")
 }
@@ -64,7 +64,7 @@ func TestHandler_Output(t *testing.T) {
 }
 
 func TestOutput_Output_Stdout(t *testing.T) {
-	h := NewHandler(StdoutType)
+	h := NewHandler(StdoutType, nil)
 	expected := "stdout test inkl. Debug verification"
 	// Capture stdout
 	r, w, _ := os.Pipe()
@@ -88,7 +88,7 @@ func TestOutput_Output_Stdout(t *testing.T) {
 }
 
 func TestOutput_Output_Clipboard(t *testing.T) {
-	h := NewHandler(ClipboardType)
+	h := NewHandler(ClipboardType, nil)
 	expected := "clipboard test"
 	err := h.Output(expected)
 	if err != nil {

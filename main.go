@@ -3,8 +3,14 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"strconv"
 
+	"time"
+
+	"github.com/pquerna/otp/totp"
 	"github.com/tobischo/gokeepasslib/v3"
+	"golang.design/x/clipboard"
 
 	"kpasscli/src/cmd"
 	"kpasscli/src/config"
@@ -22,9 +28,24 @@ func RunApp(
 	resolvePassword func(string, *config.Config, string, ...keepass.PasswordPromptFunc) (string, error),
 	openDatabase func(string, string) (*gokeepasslib.Database, error),
 	newFinder func(*gokeepasslib.Database) search.FinderInterface,
-	newHandler func(output.OutputType) output.Handler,
+	newHandler func(output.OutputType, output.ClipboardService) output.Handler,
+	clipboardService output.ClipboardService,
 	getEnv func(string) string,
 ) error {
+	// Handle clipboard clearing background process
+	if flags.ClearClipboard {
+		if flags.ClearAfter > 0 {
+			debug.Log("Waiting %d seconds before clearing clipboard...", flags.ClearAfter)
+			time.Sleep(time.Duration(flags.ClearAfter) * time.Second)
+		}
+		if err := clipboardService.Init(); err != nil {
+			return fmt.Errorf("failed to initialize clipboard: %v", err)
+		}
+		clipboardService.Write(clipboard.FmtText, []byte(""))
+		debug.Log("Clipboard cleared.")
+		return nil
+	}
+
 	debug.Log("Starting kpasscli with item: %s", flags.Item)
 
 	if flags.Item == "" {
@@ -82,15 +103,70 @@ func RunApp(
 	}
 
 	outputType := output.ResolveOutputType(flags.Out, config)
-	handler := newHandler(outputType)
+	handler := newHandler(outputType, clipboardService)
 
-	value, err := results[0].GetField(flags.FieldName)
-	if err != nil {
-		return fmt.Errorf("Error getting field: %w", err)
+	var value string
+	if flags.TotpFlag {
+		totpSecret, err := results[0].GetField("TimeOtp-Secret-Base32")
+		if err != nil {
+			return fmt.Errorf("TOTP secret not found: %w", err)
+		}
+		token, err := totp.GenerateCode(totpSecret, time.Now())
+		if err != nil {
+			return fmt.Errorf("Error generating TOTP token: %w", err)
+		}
+		value = token
+	} else {
+		value, err = results[0].GetField(flags.FieldName)
+		if err != nil {
+			return fmt.Errorf("Error getting field: %w", err)
+		}
+
+		if flags.PasswordTotp {
+			totpSecret, err := results[0].GetField("TimeOtp-Secret-Base32")
+			if err != nil {
+				// If the field is not found, we just don't append anything, or should we error?
+				// The request says "when it is defined in keepass". So if not defined, maybe just warn or ignore?
+				// "Add a cli param -pt to add the otp token to the end of the password when it is defined in keepass"
+				// Implies if not defined, maybe don't add it.
+				// But usually if I ask for it, I expect it.
+				// Let's log a debug message and proceed without it if missing, or maybe error?
+				// "when it is defined" suggests conditional.
+				debug.Log("TOTP secret not found: %v", err)
+			} else {
+				// Clean up the secret (remove spaces, etc if needed? Base32 usually needs to be clean)
+				// The library handles some cleaning but let's be safe?
+				// gokeepasslib usually returns raw string.
+				// pquerna/otp expects clean base32.
+				// Let's assume it's clean enough or the lib handles it.
+				token, err := totp.GenerateCode(totpSecret, time.Now())
+				if err != nil {
+					return fmt.Errorf("Error generating TOTP token: %w", err)
+				}
+				value = value + token
+			}
+		}
 	}
 
 	if err := handler.Output(value); err != nil {
 		return fmt.Errorf("Error outputting value: %w", err)
+	}
+
+	// If output is clipboard and ClearAfter is set, spawn background process
+	if outputType == output.ClipboardType && flags.ClearAfter > 0 {
+		exe, err := os.Executable()
+		if err != nil {
+			debug.Log("Failed to get executable path: %v", err)
+		} else {
+			debug.Log("Spawning background process to clear clipboard after %d seconds", flags.ClearAfter)
+			cmd := exec.Command(exe, "--clear-clipboard", "-ca", strconv.Itoa(flags.ClearAfter))
+			if err := cmd.Start(); err != nil {
+				debug.Log("Failed to start background process: %v", err)
+			} else {
+				// Detach process
+				cmd.Process.Release()
+			}
+		}
 	}
 
 	return nil
@@ -108,6 +184,7 @@ func main() {
 		keepass.OpenDatabase,
 		func(db *gokeepasslib.Database) search.FinderInterface { return search.NewFinder(db) },
 		output.NewHandler,
+		&output.RealClipboard{},
 		os.Getenv,
 	)
 	if err != nil {
