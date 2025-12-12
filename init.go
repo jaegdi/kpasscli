@@ -30,6 +30,10 @@ func Init() *cmd.Flags {
 		search.EnableVerify()
 	}
 
+	if flags.Clipboard {
+		flags.Out = "clipboard"
+	}
+
 	// Handle special flags and help messages
 	if flags.CreateConfig {
 		filename := "config.yaml"

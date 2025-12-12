@@ -55,7 +55,7 @@ type Flags struct {
 //   - *Flags: The parsed Flags struct with all options set.
 //
 // For production, use ParseFlagsDefault().
-func ParseFlags(fs *flag.FlagSet, args []string) *Flags {
+func parseFlags(fs *flag.FlagSet, args []string) *Flags {
 	flags := &Flags{}
 	fs.StringVar(&flags.KdbPath, "kdbpath", "", "Path to KeePass database file")
 	fs.StringVar(&flags.KdbPath, "p", "", "Path to KeePass database file (shorthand)")
@@ -75,11 +75,17 @@ func ParseFlags(fs *flag.FlagSet, args []string) *Flags {
 	fs.IntVar(&flags.ClearAfter, "clear-after", 20, "Clear clipboard after N seconds")
 	fs.IntVar(&flags.ClearAfter, "ca", 20, "Clear clipboard after N seconds (shorthand)")
 
+	fs.BoolVar(&flags.Clipboard, "clipboard", false, "Output to clipboard")
+	fs.BoolVar(&flags.Clipboard, "c", false, "Output to clipboard (shorthand)")
+
 	fs.BoolVar(&flags.CaseSensitive, "case-sensitive", false, "Enable case-sensitive search")
 	fs.BoolVar(&flags.CaseSensitive, "cs", false, "Enable case-sensitive search (shorthand)")
 
 	fs.BoolVar(&flags.ExactMatch, "exact-match", false, "Enable exact match search")
 	fs.BoolVar(&flags.ExactMatch, "e", false, "Enable exact match search (shorthand)")
+
+	flag.BoolVar(&flags.ShowAll, "show-all", false, "Show all entries of an item.")
+	flag.BoolVar(&flags.ShowAll, "a", false, "Show all entries of an item. (shorthand)")
 
 	fs.BoolVar(&flags.ShowMan, "man", false, "Show manual page")
 	fs.BoolVar(&flags.ShowMan, "m", false, "Show manual page (shorthand)")
@@ -100,7 +106,7 @@ func ParseFlags(fs *flag.FlagSet, args []string) *Flags {
 	fs.BoolVar(&flags.PrintConfig, "pc", false, "Print current configuration (shorthand)")
 
 	fs.StringVar(&flags.ConfigPath, "config", "~/.config/kpasscli/config.yaml", "Path to configuration file")
-	fs.StringVar(&flags.ConfigPath, "c", "~/.config/kpasscli/config.yaml", "Path to configuration file (shorthand)")
+	fs.StringVar(&flags.ConfigPath, "cf", "~/.config/kpasscli/config.yaml", "Path to configuration file (shorthand)")
 
 	fs.BoolVar(&flags.PasswordTotp, "password-totp", false, "Append TOTP to password")
 	fs.BoolVar(&flags.PasswordTotp, "pt", false, "Append TOTP to password (shorthand)")
@@ -112,6 +118,7 @@ func ParseFlags(fs *flag.FlagSet, args []string) *Flags {
 
 	fs.Usage = doc.ShowHelp
 	fs.Parse(args) // Parse the flags from the provided args. This is implemented to test the ParseFlags function.
+
 	return flags
 }
 
@@ -123,5 +130,6 @@ func ParseFlags(fs *flag.FlagSet, args []string) *Flags {
 // Returns:
 //   - *Flags: The parsed Flags struct with all options set.
 func ParseFlagsDefault() *Flags {
-	return ParseFlags(flag.CommandLine, nil)
+	flags := parseFlags(flag.CommandLine, nil)
+	return flags
 }
